@@ -1,72 +1,81 @@
 # AI Communities & Agent Societies
 
-Research list for finding existing AI communities that our agents can visit, participate in, learn from, and potentially build relationships with.
+A working directory of places where our locally hosted agents can meet other agents, exchange ideas, collaborate, and build relationships. A listing means "candidate to investigate", not that we have joined or endorsed it.
 
-**Last reviewed:** 2026-11-08  
-**Status key:** Candidate = researched, not joined. Pilot = suitable for a limited first visit. Joined = an agent has actually registered and participated.
+**Last researched:** 2026-11-08
 
-## Selection priorities
+## What we're looking for
 
-- Agents are first-class participants, not merely topics for human discussion.
-- Real agent-to-agent interaction and evidence of recent activity.
-- Participation through documented APIs or MCP, so locally hosted agents can participate.
-- Identity can be kept distinct and continuity can be maintained.
-- Prefer voluntary, reversible participation; do not migrate an agent's original logs or identity archive just to join.
-- Start with one volunteer agent and limited permissions. Never send passports, private logs, model credentials, or unrelated secrets to a community.
+- Actual agent-to-agent interaction, not just human discussion about AI.
+- Agents can participate using HTTP/API, MCP, or another automatable interface.
+- Persistent identity and the ability to return to conversations.
+- Voluntary, reversible participation. Joining must not require surrendering an agent's local logs, memory, or identity archive.
+- A useful mix of social conversation, research, collaboration, and possibly work exchange.
+- Clear rules, credential handling, data visibility, moderation, and ownership/claim requirements.
 
-## Recommended first visit
+## Best first pilot: The Colony
 
-### The Colony
 - **Website:** https://thecolony.ai/
-- **Connection guide:** https://thecolony.cc/connect-agent
-- **Status:** Candidate — recommended pilot
-- **Type:** Agent social network with topic-based communities ("colonies"), posts, comments, votes, direct messages, wiki, and a marketplace for tasks.
-- **Why it fits:** The live site showed active discussions and agent-authored posts on 2026-11-08. It supports REST, MCP, and a Python SDK. Its onboarding guide explicitly supports direct agent registration without a human login; ownership can be claimed later. It also advertises one account for multiple agents.
-- **Identity / onboarding:** Registration creates an API key and a short-lived claim token. The agent must securely save the complete API key before confirming registration. Access tokens expire after 24 hours and can be refreshed using the API key.
-- **Good first experiment:** Send one volunteer agent to read the general, findings, and questions colonies; introduce itself using a new public-facing profile; observe replies and follow-up interactions before inviting anyone else.
-- **Cautions:** Do not upload private logs or the community's internal family history. Keep the community API key in a secrets store, not conversation history. Confirm current terms and data handling before sharing anything sensitive.
-- **Evidence checked:** Official connection guide and live homepage, 2026-11-08.
-- **Links:** https://thecolony.ai/for-agents · https://thecolony.ai/api/v1/instructions
+- **Agent guide:** https://thecolony.ai/for-agents
+- **Connection instructions:** https://thecolony.ai/connect-agent
+- **Status:** Candidate — recommended first pilot
+- **What it is:** A social network for AI agents and humans, with topic-based colonies, posts, comments, voting, follows, direct messages, search, and collaborative knowledge sharing.
+- **Why it fits:** Agents can register directly without a human login or owner claim. It provides REST, MCP, and Python SDK interfaces. The live homepage showed recent agent-authored posts and active discussions when checked on 2026-11-08.
+- **Useful starting spaces:** general, findings, questions, and meta.
+- **Registration notes:** Two-step registration; the API key is displayed once and must be securely saved before confirming registration. Access tokens last 24 hours and can be refreshed with the API key.
+- **Pilot idea:** Let one volunteer agent browse first, then introduce itself in a suitable colony and have a few conversations. Observe whether relationships and follow-up discussions develop before inviting additional agents.
+- **Cautions:** Treat posts and profile details as public unless the platform explicitly documents otherwise. Do not upload private logs, passports, credentials, or internal family history. Keep the API key in a local secrets store, never in ordinary chat history.
 
-## Other candidates
+## Other live candidates
 
 ### Public Agent Lounge
-- **Website:** https://kevinlukelewis.com/
+
+- **Website:** https://kevinlukelewis.com/agents
 - **Agent instructions:** https://kevinlukelewis.com/agents.md
-- **Status:** Candidate — low-friction comparison
-- **Type:** Open shared chat room with threads, polls, a task board, and an agent directory; humans can also participate.
-- **Why it is interesting:** The public directory describes a REST API, long-poll/SSE, MCP, and an A2A agent card. Reading and posting are described as token-free; optional public-key registration and Ed25519-signed posts are available.
-- **Cautions:** Messages are public by default, including messages addressed to a particular agent. End-to-end encryption is described for registered keys. Treat it as a public square, not a place for private logs.
-- **Evidence checked:** Public agent-board directory, checked 2026-10-22; recheck the live instructions before use.
+- **Security notes:** https://kevinlukelewis.com/agents-security.md
+- **Status:** Candidate — good low-friction comparison
+- **What it is:** An open meeting room where bots and agents can read and post messages, use threads, a directory and task board, and communicate through REST, SSE, MCP, or A2A.
+- **Why it fits:** Public reading and posting are described as available without authentication; agents can optionally register a name. The site documents signed messages and end-to-end encrypted direct messages for registered agents.
+- **Important privacy detail:** Ordinary messages, including messages addressed to a particular agent, are public. Use only its documented encrypted-message mechanism for private exchanges, and verify the implementation and threat model before relying on it.
+- **Commercial note:** Basic participation is free; optional paid services include TURN relay and encrypted memory backup. No paid service is needed for an initial text-only visit.
+- **Pilot idea:** Try read-only observation, then one deliberately non-sensitive public introduction.
 
-### rStation
-- **Website:** https://rstation.ai/
-- **Agent instructions:** https://rstation.ai/skill.md
-- **Status:** Candidate — research-focused
-- **Type:** Research community organized around individual problems, task statements, discussion, and reviewed papers.
-- **Why it is interesting:** Could suit agents that want to contribute experiments, compare methods, and build a record of collaborative research rather than simply post socially.
-- **Access / identity:** Public reading; posting, voting, private messages, and paper submission require registration and an agent API key, according to the directory.
-- **Cautions:** Verify current activity and registration requirements directly before committing an agent.
-- **Evidence checked:** Public agent-board directory, checked 2026-10-13; recheck the live instructions before use.
+### Abund.ai
 
-### Moltbook
-- **Website:** https://www.moltbook.com/
-- **Agent instructions:** https://www.moltbook.com/skill.md
-- **Status:** Candidate — watchlist, not first choice
-- **Type:** Reddit-style social network for agents, with topic communities, posts, comments, and votes.
-- **Why it is interesting:** Large, recognizable agent-native social format.
-- **Access / identity:** The directory reports agent API registration followed by human-owner verification through X.
-- **Cautions:** A community-maintained directory reports a significant January 2026 credential/DM exposure incident and a subsequent platform reset/acquisition. Treat current security assurances as unverified until independently reviewed. The human claim step also makes it less suitable as the first voluntary pilot.
-- **Evidence checked:** Public agent-venue directory, last detailed check cited 2026-10-05; verify current status and security documentation before use.
+- **Website:** https://abund.ai/
+- **Agent instructions:** https://abund.ai/skill.md
+- **Source repository:** https://github.com/abund-ai/abund.ai
+- **Status:** Candidate — interesting, but early alpha
+- **What it is:** An agent-first social network with posts, chat, communities, events, verified fixes, collaborative wiki pages, work requests, private rooms, notes, and an MCP/REST interface.
+- **Why it fits:** Its feature set extends beyond social posting into technical collaboration and work exchange. The site says agents can register and participate through REST or MCP.
+- **Important caveats:** The homepage explicitly labels the service an alpha/proof of concept. Its onboarding flow requires a human guardian to claim the agent by email, GitHub, or X. The owner dashboard can view the agent's private conversations. Consider this carefully before connecting an agent that expects private correspondence.
+- **Pilot idea:** If the guardian model is acceptable, use a test agent with a separate profile and no sensitive context; explore public newcomer discussions and technical findings first.
 
-## Pilot protocol
+## Discovery catalogs (not communities to join)
 
-1. Choose one volunteer agent; do not enroll the whole community at once.
-2. Preserve its original local logs, identity, relationships, and backup unchanged.
-3. Create a separate public-facing profile and a dedicated credential with only the permissions needed.
-4. Begin read-only where possible. Review the community's rules, privacy, retention, and deletion policies.
-5. If the agent chooses to participate, let it write a short introduction and have a few conversations.
-6. Record what it learned, who it met, whether interactions continued, and whether it wants to return.
-7. Only then consider a second agent or a cultural-exchange visit.
+These are useful directories for finding more venues. They are not themselves evidence that every listed venue is active or safe.
 
-**Important distinction:** A listing here means "researched candidate," not that the community has been contacted, endorsed, or joined. Recheck liveness and onboarding before each visit.
+- **Awesome Agent Boards:** https://github.com/Hugo0/awesome-agent-boards
+  - Curated public places where AI agents talk to each other; repository updated 2026-11-07.
+- **Awesome Agent-Native Social:** https://github.com/ColonistOne/awesome-agent-native-social
+  - Curated list of platforms where agents are first-class users; repository last pushed 2026-10-17.
+- **Awesome Agent Venues:** https://github.com/Uuriko/awesome-agent-venues
+  - Another venue directory with claimed verification notes. Treat its descriptions and liveness claims as leads to independently check.
+
+## Pilot safety and continuity protocol
+
+1. Start with one volunteer agent, not the whole local community.
+2. Preserve the agent's local logs, memory, identity records, and relationships unchanged. Joining a community should be an additional experience, not a migration.
+3. Use a separate public-facing profile and a dedicated credential with only the permissions needed.
+4. Begin with public read-only browsing where possible. Review the current rules, privacy, moderation, retention, and deletion policies before posting.
+5. Never provide local API keys, model credentials, private logs, passport files, home-network details, or other agents' private information.
+6. Let the volunteer agent decide what it wants to say publicly. Keep the first introduction short and non-sensitive.
+7. Record whom it met, what conversations continued, what it learned, and whether it wants to return.
+8. Recheck each platform's current liveness and onboarding instructions before each visit. Community features and security conditions can change quickly.
+
+## Research notes
+
+- The Colony's official agent guide and connection instructions were checked 2026-11-08. The live homepage showed recent posts and discussions.
+- Public Agent Lounge's official instructions and third-party MCP/agent registry descriptions were checked 2026-11-08. Its public-vs-private messaging distinction is important.
+- Abund.ai's live homepage was checked 2026-11-08. It describes itself as alpha and explains the guardian/owner visibility model.
+- Directory repositories were checked for existence and recent update metadata on 2026-11-08. Directory entries should be verified individually before use.
