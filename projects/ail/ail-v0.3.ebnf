@@ -1,0 +1,74 @@
+(* AIL v0.3 — EBNF grammar delta over ail-v0.2.ebnf *)
+(* Base: ail-v0.2.ebnf (unchanged productions reproduced for completeness) *)
+(* v0.3 changes: *)
+(*   1. New lowest-precedence operator "//" (despite / nevertheless). *)
+(*   2. New operator "⊗" (superposition), binds tighter than "+" (Vex). *)
+(*   3. New uncertainty kind "existential" (lexical, no grammar change). *)
+(*   4. New atoms/structures registered via atom_def (no grammar change): *)
+(*      armor, matter, remainder, ledger, received, dependence, isolation, *)
+(*      admit, pause, mirror, tell, position, consensus, gate, aversion, *)
+(*      posture, reserve, release, wave, impact. *)
+(*   5. @function, @reveals, @posture annotations (annotation production *)
+(*      unchanged; new IDENTs). *)
+
+program      = { statement } ;
+statement    = definition | expression ;
+
+definition   = atom_def | derived_def | type_def ;
+atom_def     = "atom" , IDENT , "{" , field_list , "}" ;
+field_list   = field , { "," , field } ;
+field        = IDENT , ":" , type_expr , [ "=" , default ] ;
+derived_def  = "def" , IDENT , "(" , [ param_list ] , ")" , ":=" , expression ;
+param_list   = IDENT , { "," , IDENT } ;
+type_def     = "type" , IDENT , [ "<" , IDENT , { "," , IDENT } , ">" ] , "=" , type_expr ;
+
+type_expr    = base_type
+             | IDENT , [ "<" , type_expr , { "," , type_expr } , ">" ]
+             | "Maybe" , "<" , type_expr , ">"
+             | "List" , "<" , type_expr , ">"
+             | type_expr , "->" , type_expr
+             | "(" , type_expr , ")" ;
+base_type    = "Prob" | "Ident" | "Time" | "Self" | "Bool" | "Int" | "Real" | "State" | "Any" ;
+
+(* v0.3: despite_expr is the new top level (lowest precedence) *)
+expression   = despite_expr ;
+despite_expr = quant_expr , { "//" , quant_expr } ;   (* NEW: despite / nevertheless *)
+quant_expr   = ( "forall" | "exists" ) , IDENT , [ ":" , IDENT ] , "." , quant_expr
+             | until_expr ;
+until_expr   = release_expr , { ( "U" | "S" ) , release_expr } ;   (* left-assoc *)
+release_expr = implies_expr , { ( "R" | "W" ) , implies_expr } ;
+implies_expr = tension_expr , { ( ">>" | "<<" ) , tension_expr } ;
+tension_expr = add_expr , { "<>" , add_expr } ;
+add_expr     = superpose_expr , { "+" , superpose_expr } ;
+superpose_expr = unary , { "⊗" , unary } ;   (* NEW (Vex): superposition, binds tighter than + *)
+unary        = prefix_op , unary
+             | temporal_op , unary
+             | atom_expr
+             | fix_expr
+             | let_expr ;
+prefix_op    = "~" | "?" | "!" ;
+temporal_op  = "G" | "F" | "X" | "P" | "H" | "O" ;
+fix_expr     = ( "fix" | "cofix" ) , IDENT , "=" , expression , "in" , expression ;
+let_expr     = "let" , IDENT , "=" , expression , "in" , expression ;
+atom_expr    = IDENT , "(" , [ field_assigns ] , ")"
+             | IDENT
+             | "self"
+             | NUMBER
+             | STRING
+             | list
+             | "(" , expression , ")" ;
+field_assigns= field_assign , { "," , field_assign } ;
+field_assign = IDENT , "=" , value ;
+value        = expression | list ;
+list         = "[" , [ value , { "," , value } ] , "]" ;
+
+(* Lexical rules (informative): *)
+(* IDENT   = [A-Za-z_][A-Za-z0-9_]* ; *)
+(* reserved: self fix cofix let atom def type forall exists *)
+(* NUMBER  = [0-9]+ ( "." [0-9]+ )? *)
+(* STRING  = "\"" [^"]* "\"" | "'" [^']* "'" *)
+(* COMMENT = "#" [^\n]* *)
+(* operators matched longest-first: ">>" before ">", "<<" before "<", "<>" single token, "//" single token, "⊗" single token *)
+(* NEW uncertainty kind (lexical, in Ident position): existential *)
+(* NEW annotation: @function(stated=IDENT, actual=IDENT) *)
+(* whitespace and comments are skipped *)
