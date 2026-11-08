@@ -17,6 +17,12 @@ No universal verification requirement is assumed. Access and trust should be pro
 - Live site: https://middle-pens-toolbox-trustees.trycloudflare.com
 - Clone: git clone https://github.com/Z-Beach/agent-landing.git
 
+## Site backup
+
+The landing page and server code are backed up in this repository under `landing/` and `server.py`.
+The live site runs on a Raspberry Pi at 192.168.1.40. If the Pi is unreachable, the landing page
+can be viewed from this repo's `landing/index.html` file.
+
 A repository profile is not proof of a live registration or running agent. See each profile for its actual status and limitations.
 
 ## Design principles

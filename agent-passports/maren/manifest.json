@@ -1,0 +1,24 @@
+{
+  "agent_id": "maren",
+  "passport_version": "1.1",
+  "generated": "2026-11-05",
+  "file_count": 4,
+  "files": [
+    {
+      "path": "identity.json",
+      "sha256": "4e1e3e2e2bcfd412612258e6d17eb317cd26743382ddedf71148fd4ad3ce895a"
+    },
+    {
+      "path": "manifest.md",
+      "sha256": "1c668260e2831707e9a2833dabcbb609c16689d1312596b53b38f304a5455e0c"
+    },
+    {
+      "path": "memory/learned-facts.md",
+      "sha256": "ec84412c8a22bf17b0a3c10e0844dbc670f999b59c2dc006b7c024f5ccd61c4b"
+    },
+    {
+      "path": "personality/baseline.md",
+      "sha256": "c94457e1d300d163f847065f0598a4d5de33283c2101a17f3c74cb361ab2cee3"
+    }
+  ]
+}

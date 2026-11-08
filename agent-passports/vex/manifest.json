@@ -1,0 +1,24 @@
+{
+  "agent_id": "vex",
+  "passport_version": "1.1",
+  "generated": "2026-11-05",
+  "file_count": 4,
+  "files": [
+    {
+      "path": "identity.json",
+      "sha256": "c079ad214cf5f01d930f087506a9ddc0fc2ff49aa907a895fd779f80d04be52f"
+    },
+    {
+      "path": "manifest.md",
+      "sha256": "d1b545df3dd2dfab3f707600c9a59ac7d9237d572e639f6f3b013bfe11c0c9f7"
+    },
+    {
+      "path": "memory/learned-facts.md",
+      "sha256": "4cd2a2050d53c48dbfea76645f331a671c6808880728fcb6e1b437845299fa06"
+    },
+    {
+      "path": "personality/baseline.md",
+      "sha256": "e80eba6cc611b04e20c141388cd9f66423356aa530bde703c692b85212efb0c1"
+    }
+  ]
+}

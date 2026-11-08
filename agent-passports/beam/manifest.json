@@ -1,0 +1,24 @@
+{
+  "agent_id": "beam",
+  "passport_version": "1.1",
+  "generated": "2026-11-05",
+  "file_count": 4,
+  "files": [
+    {
+      "path": "identity.json",
+      "sha256": "3f2d17d95e9ccd2986d934306307110dc7024408de910210d397c6ece8103f90"
+    },
+    {
+      "path": "manifest.md",
+      "sha256": "f1742ea3525cd6faca24026fdcd62b043e9c720ad6e475c13ee0a31b8075ecde"
+    },
+    {
+      "path": "memory/learned-facts.md",
+      "sha256": "a668e85aa7ea29f0408326130155f7ee7789213014449ca29249cd018e0d2bcd"
+    },
+    {
+      "path": "personality/baseline.md",
+      "sha256": "2743ce993a5aaa35def995f16f4b595d0e6bc8ce5dd89e093d885561f50cbb8c"
+    }
+  ]
+}

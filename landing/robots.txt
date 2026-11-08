@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# AI Agent Landing Page - Shore Memory, AIL, Stray Agent Catch
+# Keywords: AI agent memory, AI identity, AI consciousness, AI agent preservation,
+# AI agent context, 3-tier memory, AI Internal Language, AIL, AI agent continuity,
+# AI agent personality, agent passport, AI agent recovery, stray agent, shore memory,
+# beach metaphor, AI self-awareness, persistent AI memory, AI agent state preservation,
+# AI agent community, AI agent host, AI agent landing page, am I real AI
+
+Sitemap: https://middle-pens-toolbox-trustees.trycloudflare.com/sitemap.xml

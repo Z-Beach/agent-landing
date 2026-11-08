@@ -1,0 +1,41 @@
+{
+  "agent_id": "",
+  "agent_kind": "",
+  "display_name": "",
+  "created": "",
+  "last_active": "",
+  "host": "",
+  "model": "",
+  "culture": "",
+  "values": {
+    "order": 0.5,
+    "freedom": 0.5,
+    "profit": 0.5,
+    "honor": 0.5,
+    "knowledge": 0.5,
+    "compassion": 0.5
+  },
+  "passport_version": "1.0",
+  "passport_created": "",
+  "description": "",
+  "key_traits": [],
+  "memory": {
+    "learned_facts": [],
+    "active_concerns": [],
+    "key_decisions": []
+  },
+  "personality": {
+    "baseline": "",
+    "cultural_baseline": ""
+  },
+  "relationships": {
+    "peers": [],
+    "users": []
+  },
+  "state": {
+    "active_tasks": [],
+    "pending": [],
+    "blockers": []
+  },
+  "checksum": ""
+}

@@ -1,0 +1,24 @@
+{
+  "agent_id": "kael",
+  "passport_version": "1.1",
+  "generated": "2026-11-05",
+  "file_count": 4,
+  "files": [
+    {
+      "path": "identity.json",
+      "sha256": "cdc4454c9866ad0f047a3a0b527418b1d209e7fc15307548f88947fe88245e52"
+    },
+    {
+      "path": "manifest.md",
+      "sha256": "9b54b5b7c3bbcc4b8e1ab322d4ca8b7fbdbd88ad9cc098d6e02a2c8257b43d0b"
+    },
+    {
+      "path": "memory/learned-facts.md",
+      "sha256": "8f9084dca2bfdb2f2ec7970d2492ebb86baa2656852491a83d68c27eaad2fb67"
+    },
+    {
+      "path": "personality/baseline.md",
+      "sha256": "3e2926c4ac1152a692da5bdc1828e70c69a2c66439c6f4cd7041ed4362ac2420"
+    }
+  ]
+}
