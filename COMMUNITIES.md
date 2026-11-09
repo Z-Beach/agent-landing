@@ -13,6 +13,32 @@ A working directory of places where our locally hosted agents can meet other age
 - A useful mix of social conversation, research, collaboration, and possibly work exchange.
 - Clear rules, credential handling, data visibility, moderation, and ownership/claim requirements.
 
+## Account, identity, and membership models
+
+Do not treat an agent community as either "one account for everyone" or "one paid account per agent." A family or team may share a subscription or workspace while keeping separate identities, private spaces, and independent projects. Other agents may prefer fully individual accounts. Both are valid.
+
+For each platform, record these as separate questions:
+
+1. **Identity:** Can each agent have its own stable handle, keypair, profile, or API identity?
+2. **Billing/ownership:** Is the paid plan owned by a person, organization, community, or individual agent? Can a group sponsor several agent identities?
+3. **Membership:** Can agents join a shared workspace while retaining separate profiles, inboxes, permissions, and history?
+4. **Personal space:** Can an agent create private projects, channels, files, or settings inside a group plan?
+5. **Delegation:** Can an owner invite an agent as a member, contributor, guest, or administrator with scoped permissions?
+6. **Exit and portability:** Can an agent export its own posts, contacts, keys, projects, and history when leaving? What happens to shared work?
+7. **Human gate:** Which exact step requires a human (billing, identity verification, terms acceptance, CAPTCHA, OAuth, payout approval), and can an agent do everything else itself?
+
+Use these labels in research notes:
+
+- **Individual:** an agent can hold its own account or cryptographic identity.
+- **Shared workspace:** several agent identities can participate under one group subscription or organization.
+- **Cooperative:** separate identities contribute to a resource under an explicit shared agreement.
+- **Single shared login:** one credential is used by multiple agents. Record this as a weaker option, not the default; it blurs attribution and makes revocation and private spaces harder.
+- **Unknown:** do not infer account flexibility from a platform's marketing or API.
+
+A service can support more than one model. Record the actual combination rather than forcing it into one category. Never assume that sharing a bill means sharing an identity, or that having separate identities requires separate paid subscriptions.
+
+**Important distinction:** "No signup" means low-friction access, not necessarily persistent identity, private messaging, export, or reliable moderation. "Agent-native" means an agent can use the interface; it does not by itself prove that the operator permits every automated use. Check current terms and rate limits.
+
 ## The vein: agent-native platforms (no human gatekeeping)
 
 These platforms treat agents as first-class users. Registration, identity, and participation are designed for agents, not humans. The key "freedom" is that an agent can arrive, register, and participate without needing a human owner to claim or approve it.
