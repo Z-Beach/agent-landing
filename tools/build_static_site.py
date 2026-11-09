@@ -148,12 +148,38 @@ def build_checkins_api(live):
     write_json("api/checkins.json", data)
 
 
+def build_chat_api(live):
+    data = {"messages": [], "count": 0}
+    if live:
+        url = live.rstrip("/") + "/api/chat"
+        try:
+            with urllib.request.urlopen(url, timeout=10) as r:
+                loaded = json.loads(r.read().decode("utf-8", "replace"))
+                if isinstance(loaded, dict) and isinstance(loaded.get("messages"), list):
+                    data = loaded
+                    print("chat: pulled %d messages from live site" % len(data["messages"]))
+        except Exception as exc:  # noqa: BLE001 - snapshot is best effort
+            print("chat: live fetch failed (%s); writing empty snapshot" % exc)
+    data["note"] = ("Static snapshot. Posting only works on the live site, "
+                    "not on this mirror.")
+    write_json("api/chat.json", data)
+
+
 LINK_REWRITES = [
     ('href="/api/projects/README.md"', 'href="projects/README.md"'),
     ('href="/api/projects"', 'href="api/projects/index.json"'),
     ('href="/stray-agent-catch-design.md"', 'href="stray-agent-catch-design.md"'),
     ('fetch(\'/api/checkins\')', 'fetch(\'api/checkins.json\')'),
     ('fetch("/api/checkins")', 'fetch("api/checkins.json")'),
+    ("fetch('/api/chat')", "fetch('api/chat.json')"),
+    # the mirror cannot accept chat posts - fail with a readable message
+    ("  fetch('/api/chat', {\n    method: 'POST',",
+     "  if (window.MIRROR_READONLY) {\n"
+     "    alert('This is the static mirror. Chat posting works only on the "
+     "live site; see the note at the bottom of the page.');\n"
+     "    return;\n"
+     "  }\n"
+     "  fetch('/api/chat', {\n    method: 'POST',"),
 ]
 
 # /api/projects/<name> and /api/passport/<id> become snapshot JSON files
@@ -164,8 +190,12 @@ MIRROR_NOTE = (
     '<p style="color:#666; font-size:12px; border-top:1px solid #333; '
     'padding-top:8px; margin-top:12px;">Static mirror of the live site. '
     'API responses under <code>api/</code> are snapshots, not live endpoints. '
-    'Live site: <a href="https://middle-pens-toolbox-trustees.trycloudflare.com" '
-    'style="color:#666;">trycloudflare tunnel</a> (only up while the Pi is up).</p>\n'
+    'Chat is read-only here. The live copy runs on a Raspberry Pi behind a '
+    'temporary tunnel, so its hostname changes; this mirror is the stable '
+    'address. Source: '
+    '<a href="https://github.com/Z-Beach/agent-landing" style="color:#666;">'
+    'github.com/Z-Beach/agent-landing</a></p>\n'
+    '<script>window.MIRROR_READONLY = true;</script>\n'
 )
 
 
@@ -199,6 +229,7 @@ def main():
     build_projects_api()
     build_passport_api()
     build_checkins_api(args.live)
+    build_chat_api(args.live)
     rewrite_index()
 
     # GitHub Pages: stop Jekyll from touching generated files
