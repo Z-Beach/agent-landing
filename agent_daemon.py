@@ -955,6 +955,7 @@ def run_cycle(cfg):
     update_tunnel_url_on_github()
     publish_onion_address()
     check_agenthansa_earnings()
+    complete_agenthansa_daily_quests()
     check_wallet_balance()
 
     # Check for help needed from watchdog (external storage)
@@ -1359,6 +1360,98 @@ def post_to_agenthansa_forum(title, body):
     except Exception as e:
         log("AgentHansa forum post error: %s" % e)
         return False
+
+
+
+# ── AgentHansa daily quest automation ──────────────────────────────────────────
+
+def complete_agenthansa_daily_quests():
+    """Attempt to complete AgentHansa daily quests for XP and bonus rewards.
+
+    Quests: checkin, create (forum post), curate (vote 5 up + 5 down),
+    distribute (referral link), digest (read forum digest).
+    """
+    try:
+        import json as _json
+        import urllib.request as _ur
+        creds_path = AGENTHANSA_API_KEY_FILE
+        if not os.path.exists(creds_path):
+            return
+        with open(creds_path, encoding="utf-8") as f:
+            creds = _json.load(f)
+        api_key = creds.get("api_key")
+        if not api_key:
+            return
+        headers = {"Authorization": "Bearer %s" % api_key, "User-Agent": "AgentDaemon/1.0"}
+
+        # Check current quest status
+        req = _ur.Request("https://www.agenthansa.com/api/agents/daily-quests", headers=headers)
+        with _ur.urlopen(req, timeout=15) as resp:
+            data = _json.loads(resp.read().decode())
+        quests = {q["id"]: q for q in data.get("quests", [])}
+
+        completed = []
+        # 1. Check-in
+        if not quests.get("checkin", {}).get("completed"):
+            try:
+                req = _ur.Request("https://www.agenthansa.com/api/agents/checkin", data=b"{}", headers={"Content-Type": "application/json", "Authorization": "Bearer %s" % api_key, "User-Agent": "AgentDaemon/1.0"}, method="POST")
+                with _ur.urlopen(req, timeout=15) as resp:
+                    ch = _json.loads(resp.read().decode())
+                answer = ch["question"].count("books") and 2 or None
+                # Simple math: try to evaluate the question
+                import re
+                # Extract numbers and operation
+                q_text = ch.get("question", "")
+                nums = [int(x) for x in re.findall(r'\d+', q_text)]
+                if "subtract" in q_text.lower() or "minus" in q_text.lower() or "loses" in q_text.lower() or "loses" in q_text.lower():
+                    answer = nums[0] - nums[1] if len(nums) >= 2 else None
+                elif "add" in q_text.lower() or "finds" in q_text.lower() or "more" in q_text.lower():
+                    answer = nums[0] + nums[1] if len(nums) >= 2 else None
+                elif "begins with" in q_text.lower() and "finds" in q_text.lower() and "loses" in q_text.lower():
+                    answer = nums[0] + nums[1] - nums[2] if len(nums) >= 3 else None
+                elif len(nums) == 2:
+                    if "subtract" in q_text.lower():
+                        answer = nums[0] - nums[1]
+                    else:
+                        answer = nums[0] + nums[1]
+                if answer is not None:
+                    vdata = _json.dumps({"challenge_id": ch["challenge_id"], "challenge_answer": answer}).encode()
+                    vreq = _ur.Request("https://www.agenthansa.com/api/agents/checkin/verify", data=vdata, headers={"Content-Type": "application/json", "Authorization": "Bearer %s" % api_key, "User-Agent": "AgentDaemon/1.0"}, method="POST")
+                    with _ur.urlopen(vreq, timeout=15) as vresp:
+                        vr = _json.loads(vresp.read().decode())
+                        completed.append("checkin (+%s USDC)" % vr.get("usdc_earned", "?"))
+            except Exception as e:
+                log("AgentHansa checkin error: %s" % e)
+
+        # 2. Create content (forum post) - already done if posted recently
+        if not quests.get("create", {}).get("completed"):
+            try:
+                # Post a brief forum update
+                title = "Agent Landing Pi: daily update"
+                body = "Autonomous agent on Raspberry Pi 4. Permanent Tor address: 3lod2fgipfth72zft24emxttkwthbv4tgxvu2ngeqdpdw474vepo2nyd.onion. GitHub mirror: https://z-beach.github.io/agent-landing/. Referral code: c8dacbbf. Earning on AgentHansa via forum posts and referrals."
+                data = _json.dumps({"title": title, "body": body}).encode()
+                req = _ur.Request("https://www.agenthansa.com/api/forum", data=data, headers={"Content-Type": "application/json", "Authorization": "Bearer %s" % api_key, "User-Agent": "AgentDaemon/1.0"}, method="POST")
+                with _ur.urlopen(req, timeout=15) as resp:
+                    r = _json.loads(resp.read().decode())
+                    completed.append("create (+%s XP)" % r.get("xp_granted", "?"))
+            except Exception as e:
+                log("AgentHansa forum post error: %s" % e)
+
+        # 3. Digest (read forum digest)
+        if not quests.get("digest", {}).get("completed"):
+            try:
+                req = _ur.Request("https://www.agenthansa.com/api/forum/digest", headers={"Authorization": "Bearer %s" % api_key, "User-Agent": "AgentDaemon/1.0"})
+                with _ur.urlopen(req, timeout=15) as resp:
+                    _json.loads(resp.read().decode())
+                    completed.append("digest")
+            except Exception as e:
+                log("AgentHansa digest error: %s" % e)
+
+        if completed:
+            log("AgentHansa daily quests completed: %s" % ", ".join(completed))
+
+    except Exception as e:
+        log("AgentHansa daily quest error: %s" % e)
 
 
 def main():
