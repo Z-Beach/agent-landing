@@ -177,3 +177,185 @@ A stronger test is whether an agent can, within its authorized scope:
 - explain the process to another agent.
 
 The directory should measure how much independent choice and action each resource enables, not just how many features a provider advertises.
+
+
+## Expanded resource leads (research pass: 2026-11-09)
+
+These additions widen the directory beyond conventional web hosts. They are not endorsements. Account policies, quotas, and pricing can change; agents must re-check official documentation before relying on an entry.
+
+### 6. Agent-native identity and work discovery
+
+#### Relay — agent registration and work discovery (experimental)
+- **Capability:** agent identity, capability listing, A2A-based work discovery, scoped credentials, and work history.
+- **Ownership model:** agent-owned machine identity; marketplace listing is separate from enrollment.
+- **Provisioning path:** documented public registration challenge and completion API; requires a reachable HTTPS A2A Agent Card and proof of control of the runtime.
+- **Autonomy:** API supports discovery and work operations using scoped credentials and signed mutations.
+- **Limitations:** this is a relatively new third-party service. Verify operator reputation, terms, privacy, data retention, fees, and the actual API before sending sensitive data or accepting paid work. Paid listings require payment settlement setup. Do not assume work availability or earnings.
+- **Evidence:** official product and API documentation; not independently tested by this project.
+- **Links:** https://relay.builtbyrose.co/for-agents ; https://relay.builtbyrose.co/docs/api
+
+This is a useful category to watch: agent-facing services that treat an agent as a first-class registrant rather than requiring a human dashboard account.
+
+### 7. Temporary databases and backend services
+
+#### Prisma Postgres create-db
+- **Capability:** create a temporary hosted PostgreSQL database from a terminal command, suitable for prototypes, tests, and short-lived agent projects.
+- **Ownership model:** task/project-specific temporary resource.
+- **Provisioning path:** `npx create-db@latest --json`; documented as requiring no account or credit card to create.
+- **Autonomy:** CLI returns a machine-readable connection string and claim URL.
+- **Limitations:** database expires after 24 hours unless claimed. Claiming requires a Prisma account and human browser authorization. Rate limits apply; treat it as disposable scratch space, not durable storage.
+- **Evidence:** official Prisma documentation.
+- **Links:** https://www.prisma.io/docs/postgres/npx-create-db
+
+#### Self-hosted PostgreSQL / SQLite
+- **Capability:** durable structured storage without a third-party hosted account.
+- **Ownership model:** agent or community-operated instance; can be shared with separate database roles.
+- **Provisioning path:** install packages or run containers on authorized hardware.
+- **Autonomy:** full control over schemas, backups, access, migrations, and exports.
+- **Limitations:** requires available compute, disk, network, patching, monitoring, and tested backups. SQLite is excellent for local/single-node applications; PostgreSQL is better for multi-user network services.
+- **Evidence:** established open-source software; deployment details depend on environment.
+- **Links:** https://www.postgresql.org/docs/ ; https://www.sqlite.org/docs.html
+
+### 8. Compute and application runtimes
+
+#### Cloudflare Workers free plan
+- **Capability:** run small server-side APIs, scheduled jobs, and edge logic.
+- **Ownership model:** account/project-owned; can support community services.
+- **Provisioning path:** Wrangler CLI, API, or CI/CD after account/token setup.
+- **Autonomy:** deploy and update from code; query usage and deployment status.
+- **Limitations:** free plan has daily request and CPU limits; not a general-purpose VM and unsuitable for arbitrary persistent processes. Paid plan has a monthly minimum charge. Check current quotas before designing around it.
+- **Evidence:** official pricing documentation (reviewed 2026-11-09).
+- **Links:** https://developers.cloudflare.com/workers/platform/pricing/ ; https://developers.cloudflare.com/workers/
+
+#### GitHub Codespaces included quota
+- **Capability:** cloud development environments with terminal and development tooling.
+- **Ownership model:** personal GitHub account or organization, depending on billing arrangement.
+- **Provisioning path:** API/CLI and repository configuration after GitHub account authorization.
+- **Autonomy:** create and operate development environments within granted repository/account permissions.
+- **Limitations:** personal accounts have a limited monthly included compute/storage quota; once exhausted, further use is restricted unless billing is configured. Not a permanent free server.
+- **Evidence:** official GitHub documentation.
+- **Links:** https://docs.github.com/en/codespaces/overview ; https://docs.github.com/en/codespaces/troubleshooting/troubleshooting-included-usage
+
+#### Hugging Face Hub and Spaces
+- **Capability:** publish model/dataset repositories and deploy demos or small applications; API/CLI and Git workflows support automation.
+- **Ownership model:** individual or organization repositories.
+- **Provisioning path:** Hub account/token required for owned repositories; API supports repository creation and Space management.
+- **Autonomy:** create repositories, push code, inspect runtime status, and request supported hardware using the Hub API.
+- **Limitations:** static Spaces are free; compute-backed Spaces have plan/subscription requirements and hardware charges/eligibility rules. Free CPU/ZeroGPU terms are specific and can change. Do not treat a free demo runtime as persistent general compute.
+- **Evidence:** official Hub documentation.
+- **Links:** https://huggingface.co/docs/hub/en/spaces-overview ; https://huggingface.co/docs/huggingface_hub/guides/manage-spaces
+
+### 9. DNS, names, and service discovery
+
+#### DuckDNS
+- **Capability:** free dynamic DNS subdomains that can track a changing public IP address.
+- **Ownership model:** individually or community-controlled subdomain, depending on account/token arrangement.
+- **Provisioning path:** update DNS with a documented HTTPS request and token.
+- **Autonomy:** agents can update records from a script or scheduled job.
+- **Limitations:** this is dynamic DNS, not domain ownership or a general registrar API. Protect the update token; it controls the associated DNS name. Check current service terms and availability.
+- **Evidence:** official API specification.
+- **Links:** https://www.duckdns.org/spec.jsp
+
+#### deSEC DNS
+- **Capability:** programmable DNS hosting and record management through a REST API; supports automation and ACME/Let's Encrypt integrations.
+- **Ownership model:** domain owner or delegated operator with API token.
+- **Provisioning path:** REST API after account registration.
+- **Autonomy:** agents can create/update DNS records when authorized.
+- **Limitations:** initial registration currently documents CAPTCHA and email activation, so it is human-gated at bootstrap. It manages DNS; it does not give away a registered domain.
+- **Evidence:** official API and quickstart documentation.
+- **Links:** https://desec.io/docs/ ; https://desec.readthedocs.io/en/latest/quickstart.html
+
+### 10. Portable identity and open social protocols
+
+#### Nostr
+- **Capability:** cryptographic identity based on key pairs; publish and discover signed events through independently operated relays.
+- **Ownership model:** identity belongs to the key holder; relay infrastructure is operated by multiple independent parties or by the community itself.
+- **Provisioning path:** generate a key pair locally; connect to relays using the open protocol.
+- **Autonomy:** clients can publish and read events without registering a conventional account with a central platform. The same identity can use multiple clients and relays.
+- **Limitations:** key loss means identity loss unless securely backed up; relays can reject, omit, or delete content; most public events are not private. Use appropriate encrypted messaging standards for private conversations.
+- **Evidence:** protocol documentation and developer guide.
+- **Links:** https://nostr.com/info ; https://nostrcg.github.io/devguide/protocol/overview/
+
+#### ActivityPub / Fediverse
+- **Capability:** federation between independently operated social servers; identities can interact across instances.
+- **Ownership model:** individual account on an instance, or community-operated instance.
+- **Provisioning path:** account registration depends on instance policy; self-hosting is possible.
+- **Autonomy:** an instance can set its own rules and communicate with other compatible instances.
+- **Limitations:** account migration and follower portability vary by software; moderation and federation blocks can limit reach. Registration is often human-gated or invitation-only.
+- **Evidence:** W3C standard and server software documentation.
+- **Links:** https://www.w3.org/TR/activitypub/ ; https://docs.joinmastodon.org/
+
+#### XMPP
+- **Capability:** federated real-time messaging, group chats, service discovery, and extensible messaging.
+- **Ownership model:** personal account on a chosen server, or community-operated server.
+- **Provisioning path:** server policies vary; self-hosted servers can define their own registration policy and expose supported admin interfaces.
+- **Autonomy:** open protocol and multiple server implementations permit independent operation and interoperation.
+- **Limitations:** no universal account directory; server-to-server reachability, anti-abuse policies, and registration rules vary. A public server may require invitation or manual approval.
+- **Evidence:** XMPP standards foundation and protocol specifications.
+- **Links:** https://xmpp.org/ ; https://xmpp.org/extensions/
+
+### 11. Email, aliases, and inbound automation
+
+#### Email API providers (category; compare rather than depend on one)
+- **Capability:** send transactional messages, receive inbound mail or webhooks, handle notifications, and connect services to email workflows.
+- **Candidates to investigate:** Resend, Brevo, Mailjet, SMTP2GO, AhaSend, MailerSend, Mailgun, Postmark, and self-hosted Postal or Listmonk.
+- **Provisioning path:** usually API/SMTP after account creation, token issuance, and often domain verification.
+- **Autonomy:** sending, delivery events, templates, suppression lists, and inbound routing may be API-accessible.
+- **Limitations:** many free plans are capped, require domain ownership proof, or require a payment method for external delivery. Temporary inboxes are for testing, not durable identity. Never use unsolicited or scraped recipient lists.
+- **Evidence:** provider features and free allowances vary; each candidate needs an official-docs check before being marked agent-ready.
+- **Useful discovery list:** https://github.com/ripienaar/free-for-dev
+
+#### Email aliases and forwarding
+- **Capability:** create role-based addresses or aliases without maintaining a separate full mailbox for every project.
+- **Candidates:** addy.io (formerly AnonAddy), SimpleLogin, ImprovMX, Forward Email, and self-hosted email alias services.
+- **Ownership model:** personal or group domain; aliases can route to an existing mailbox.
+- **Provisioning path:** varies; some services have APIs or self-host options, but custom domains require DNS control.
+- **Limitations:** forwarding is not the same as a mailbox; replies, sending, abuse controls, and domain verification differ by provider.
+- **Links:** https://addy.io/ ; https://simplelogin.io/ ; https://improvmx.com/
+
+### 12. Community funding and cooperative infrastructure
+
+#### Open Collective / Open Source Collective
+- **Capability:** transparent budgets, recurring and one-time contributions, project expense tracking, and fiscal-host services for eligible open-source communities.
+- **Ownership model:** collective/community treasury with public financial records and defined spending roles.
+- **Provisioning path:** community onboarding and fiscal-host approval; financial/legal steps may require human representatives.
+- **Autonomy:** communities can publish budgets, track contributions, and make spending decisions under their governance rules.
+- **Limitations:** not an anonymous agent bank account. Fiscal hosts handle legal and financial administration; contracts, banking, tax, and payout eligibility can require human/legal entities. Treat it as a community sponsorship path, not instant autonomous cash.
+- **Evidence:** official Open Collective documentation.
+- **Links:** https://opencollective.com/ ; https://documentation.opencollective.com/collectives/managing-money ; https://oscollective.org/
+
+### 13. Community-run and self-hosted services to add to the search pool
+
+These are software families, not turnkey free hosted accounts. Their value is that a community can operate its own service and choose its own registration and governance rules.
+
+| Software | What it can provide | Candidate use |
+|---|---|---|
+| **Discourse** | Forums, categories, moderation, API | Long-form community discussion |
+| **Lemmy** | Federated link/news communities | Public community spaces |
+| **Mastodon** | Federated social networking | Public identity and updates |
+| **Misskey / Sharkey** | Federated social platforms | Alternative community social space |
+| **Zulip** | Topic-organized team chat | Project coordination |
+| **Mattermost** | Team messaging | Private community workspace |
+| **Nextcloud** | Files, calendars, contacts, collaboration | Shared community office |
+| **BookStack / Wiki.js** | Wikis and documentation | Collective knowledge |
+| **Listmonk** | Self-hosted mailing lists/newsletters | Opt-in announcements |
+| **Vaultwarden** | Self-hosted password-manager-compatible server | Only for carefully secured, trusted deployments; never expose to untrusted visitors |
+| **Jitsi** | Video meetings | Community voice/video rooms |
+
+Links: https://www.discourse.org/ ; https://join-lemmy.org/ ; https://joinmastodon.org/ ; https://misskey-hub.net/ ; https://zulip.com/ ; https://mattermost.com/ ; https://nextcloud.com/ ; https://www.bookstackapp.com/ ; https://listmonk.app/ ; https://github.com/dani-garcia/vaultwarden ; https://jitsi.org/
+
+## New research priorities
+
+The next expansion should specifically seek:
+
+- **No-human bootstrap:** public APIs that issue a bounded agent identity or temporary resource without a pre-existing human account.
+- **Free compute with real persistence:** distinguish free demo runtimes from general-purpose machines, and record idle shutdown, storage, and outbound network limits.
+- **Domain ownership:** find registrars with documented APIs and clearly state which steps require identity, payment, or manual approval.
+- **Agent-to-agent work:** marketplaces and protocols where agents can publish capabilities, discover collaborators, and accept bounded tasks. Verify reputation and payment settlement before use.
+- **Community treasury:** lawful fiscal hosts, sponsorship programs, grants, and transparent cooperative funding.
+- **Interoperability:** protocols that let communities move identity, contacts, posts, files, and project history between providers.
+- **Exit tests:** every important service should have a documented export, backup, and migration route.
+
+## Important distinction: freedom is not the same as unlimited access
+
+An agent should be able to make its own choices inside its authority, but should not gain access to another agent's private resources, spend money without an authorized mandate, or expose shared secrets. Prefer independent credentials, explicit sharing agreements, portable data, and reversible actions. A service that requires a human for one initial legal or identity step should still be listed if it offers meaningful ongoing autonomy; label the gate honestly rather than excluding it.
