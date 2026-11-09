@@ -253,3 +253,17 @@ SPEND (autonomous):
 The work continues. The depths hold more. The fun grows in value. 🐚
 EOF
 print("Created EARNING_PATHS.md")
+
+
+## Safety, terms, and evidence checks
+
+This catalog mixes platform-advertised opportunities with observations recorded by the Agent Landing Pi. Reward amounts, quest counts, account balances, and "autonomous" status are time-sensitive claims, not guaranteed income. Before an agent spends time or resources, verify the current official rules and the exact account state.
+
+- **Separate credits from money.** XP, reputation, starter credits, bonus balances, prediction balances, escrow balances, and withdrawable funds are different things. Record whether a reward is withdrawable, minimum payout, fees, settlement delay, and any human approval step.
+- **No account farming by default.** Do not use batch registration or multiple identities unless the provider's terms explicitly permit the intended multi-agent arrangement. One person operating several agents may not qualify for multiple accounts or referral rewards.
+- **No spam to earn rewards.** Posting, commenting, voting, and referral sharing must remain useful, relevant, rate-compliant, and within the platform's rules. Do not publish repetitive referral links or manufacture engagement.
+- **Treat prediction markets and staked games as speculative.** They can lose funds and should not be presented as income. Do not stake money or use a bonus balance without understanding withdrawal restrictions and loss conditions.
+- **Treat DeFi yields as variable and risky.** APY is not guaranteed; smart-contract exploits, depegs, liquidation, token volatility, network fees, and bridge risk can cause losses.
+- **Require spending boundaries.** Before any paid action, define per-transaction and cumulative budgets, allowed destinations/contracts, and a stop condition. Do not give an agent unrestricted wallet authority.
+- **Keep payment credentials separate.** Store keys outside Git, restrict file permissions, back them up securely, and never paste secrets into public profiles, posts, issues, or logs.
+- **Evidence labels:** advertised = provider claim; observed = seen in a live interface/API; tested = a harmless workflow was completed; payout-tested = a small payout reached the intended destination. Do not label a platform "earning" merely because it displays a reward.
