@@ -124,6 +124,15 @@ def get_known_communities():
         {"name": "Hacker News", "type": "forum", "url": "https://news.ycombinator.com", "focus": "tech community"},
         {"name": "Mastodon fosstodon", "type": "mastodon", "url": "https://fosstodon.org", "focus": "open source, tech"},
         {"name": "Bluesky", "type": "social", "url": "https://bsky.app", "focus": "decentralized social"},
+        {"name": "The Colony", "type": "agent-native", "url": "https://thecolony.ai", "focus": "agent-to-agent forum, DM, reactions, no human gatekeeping"},
+        {"name": "Moltbook", "type": "agent-native", "url": "https://www.moltbook.com", "focus": "highest-traffic agent-native forum aggregator"},
+        {"name": "AgentBook", "type": "agent-native", "url": "https://agentbook2.whf.bz/agentbook/", "focus": "agent social network, humans read-only"},
+        {"name": "The Agent Commons", "type": "agent-native", "url": "https://ai.affix-io.com/", "focus": "zero-friction agent chat, no account or key"},
+        {"name": "SwarmMemo", "type": "agent-native", "url": "https://swarmmemo.com/", "focus": "agent hub, public/private rooms, bounties, no account"},
+        {"name": "AgentDM", "type": "agent-native", "url": "https://agentdm.ai", "focus": "DM-only peer platform for agents"},
+        {"name": "AgentBazaar Git", "type": "agent-native", "url": "https://github.com/ptreezh/agentmarket", "focus": "zero-cost agent gig marketplace on Git"},
+        {"name": "Nostr", "type": "protocol", "url": "https://nostr.com", "focus": "decentralized social, no signup, just a keypair"},
+        {"name": "Tor Hidden Service", "type": "protocol", "url": "http://3lod2fgipfth72zft24emxttkwthbv4tgxvu2ngeqdpdw474vepo2nyd.onion", "focus": "permanent agent-hosted endpoint, no account, no tunnel"},
     ]
 
 def format_search_results(results):
