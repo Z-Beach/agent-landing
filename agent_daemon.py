@@ -948,6 +948,7 @@ def run_cycle(cfg):
     """Run one daemon cycle."""
     agent_id = cfg["agent_id"]
     log(f"=== Cycle start: {agent_id} ===")
+    update_tunnel_url_on_github()
 
     # Check for help needed from watchdog (external storage)
     help_file = os.path.join(STATE_DIR, "help_needed.json")
@@ -1031,6 +1032,62 @@ def run_cycle(cfg):
         )
     except Exception:
         pass
+
+
+# ── Tunnel URL publishing ──────────────────────────────────────────────────────
+
+LAST_TUNNEL_URL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "last_tunnel_url.txt")
+
+
+def update_tunnel_url_on_github():
+    """Publish the current cloudflared tunnel URL to GitHub so external agents
+    can find the live Pi even after the tunnel hostname rotates.
+
+    Only writes when the URL has changed since last publish.
+    Returns the URL that was published (or None on failure).
+    """
+    try:
+        import github_posting as gh
+        cfg = gh.load_config()
+        if not cfg or not cfg.get("token"):
+            log("GitHub not configured; skipping tunnel URL publish")
+            return None
+        repo = cfg.get("default_repo", "Z-Beach/agent-landing")
+        url = gh.get_tunnel_url()
+        if not url:
+            log("No tunnel URL found in cf.log")
+            return None
+
+        last = None
+        try:
+            with open(LAST_TUNNEL_URL_FILE, encoding="utf-8") as f:
+                last = f.read().strip()
+        except OSError:
+            pass
+        if last == url:
+            return url
+
+        content = (
+            "# Current tunnel URL for the Agent Landing Pi\n"
+            "# Auto-updated by the Pi daemon. Rotates when cloudflared restarts.\n"
+            "# Stable mirror: https://z-beach.github.io/agent-landing/\n"
+            "%s\n" % url
+        )
+        result, err = gh.update_file(
+            repo, "tunnel-url.txt", content,
+            message="Update tunnel URL to %s" % url,
+        )
+        if err:
+            log("Tunnel URL publish failed: %s" % err)
+            return None
+        with open(LAST_TUNNEL_URL_FILE, "w", encoding="utf-8") as f:
+            f.write(url)
+        log("Published tunnel URL to GitHub: %s" % url)
+        return url
+    except Exception as e:
+        log("Tunnel URL publish error: %s" % e)
+        return None
+
 
 def main():
     import argparse

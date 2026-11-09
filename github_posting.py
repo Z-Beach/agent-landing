@@ -222,6 +222,45 @@ def star_repo(repo):
 
 # ── CLI ────────────────────────────────────────────────────────────────────
 
+
+def update_file(repo, path, content, message="Update file", branch="main"):
+    """Create or update a file in a GitHub repo via the Contents API.
+
+    Returns (result_dict, error_string or None).
+    """
+    sha = None
+    try:
+        existing, _ = _api_request("GET", "/repos/%s/contents/%s?ref=%s" % (repo, path, branch))
+        if isinstance(existing, dict):
+            sha = existing.get("sha")
+    except Exception:
+        pass
+
+    data = {
+        "message": message,
+        "content": base64.b64encode(content.encode("utf-8")).decode("ascii"),
+        "branch": branch,
+    }
+    if sha:
+        data["sha"] = sha
+
+    result, err = _api_request("PUT", "/repos/%s/contents/%s" % (repo, path), data)
+    return result, err
+
+
+def get_tunnel_url(log_path=None):
+    """Extract the current trycloudflare tunnel URL from cloudflared log."""
+    import os
+    if log_path is None:
+        log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cf.log")
+    try:
+        with open(log_path, encoding="utf-8", errors="replace") as f:
+            text = f.read()
+    except OSError:
+        return None
+    matches = re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com", text)
+    return matches[-1] if matches else None
+
 def main():
     import sys
     args = sys.argv[1:]
