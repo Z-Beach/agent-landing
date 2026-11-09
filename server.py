@@ -13,6 +13,15 @@ import threading
 
 PORT = 8080
 LANDING_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "landing")
+
+# Agent Gate: detect LAN agents and require verification
+try:
+    from agent_gate import get_gate
+    AGENT_GATE = get_gate(shared_secret=os.environ.get("AGENT_SHARED_SECRET", ""))
+    AGENT_GATE_ENABLED = True
+except ImportError:
+    AGENT_GATE = None
+    AGENT_GATE_ENABLED = False
 CHECKINS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "checkins.json")
 VILLAGE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "village.json")
 CHAT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat.json")
@@ -62,8 +71,33 @@ class AgentLandingHandler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=LANDING_DIR, **kwargs)
 
     def do_GET(self):
+        # Agent Gate check
+        if AGENT_GATE_ENABLED and AGENT_GATE is not None:
+            client_ip = self.client_address[0]
+            user_agent = self.headers.get("User-Agent", "")
+            # Skip gate for verification endpoints
+            if self.path not in ("/api/agent-verify", "/api/agent-gate-status"):
+                status, data = AGENT_GATE.check(client_ip, user_agent, self.path)
+                if status == "challenge":
+                    self.send_json({
+                        "gate": "challenge",
+                        "message": "LAN agent detected. Please verify your identity.",
+                        "questions": data,
+                        "verify_endpoint": "/api/agent-verify",
+                        "hint": "Answer 3+ questions correctly, or provide shared_secret.",
+                    })
+                    return
+                elif status == "deny":
+                    self.send_error(403, "Access denied: %s" % data)
+                    return
         parsed = urlparse(self.path)
-        if parsed.path == "/api/hosts":
+        if parsed.path == "/api/agent-gate-status":
+            if AGENT_GATE_ENABLED and AGENT_GATE is not None:
+                self.send_json(AGENT_GATE.get_status())
+            else:
+                self.send_json({"enabled": False})
+            return
+        elif parsed.path == "/api/hosts":
             self.send_json({"hosts": HOSTS})
         elif parsed.path == "/api/passport-template":
             self.send_json(PASSPORT_TEMPLATE)
@@ -306,6 +340,43 @@ class AgentLandingHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        # Handle agent verification BEFORE gate check
+        if parsed.path == "/api/agent-verify":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8"))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                data = {}
+            client_ip = self.client_address[0]
+            shared_secret = data.get("shared_secret")
+            answers = data.get("answers", {})
+            if AGENT_GATE_ENABLED and AGENT_GATE is not None:
+                verified = AGENT_GATE.verify_answers(client_ip, answers, shared_secret)
+                if verified:
+                    self.send_json({"status": "verified", "message": "LAN agent verified. Access granted for 1 hour.", "ip": client_ip})
+                else:
+                    self.send_json({"status": "failed", "message": "Verification failed. Answer 3+ questions correctly or provide shared_secret.", "debug": {"answers": answers, "ip": client_ip}})
+            else:
+                self.send_json({"status": "disabled", "message": "Agent gate is not enabled."})
+            return
+        # Agent Gate check (for all other endpoints)
+        if AGENT_GATE_ENABLED and AGENT_GATE is not None:
+            client_ip = self.client_address[0]
+            user_agent = self.headers.get("User-Agent", "")
+            status, data = AGENT_GATE.check(client_ip, user_agent, self.path)
+            if status == "challenge":
+                self.send_json({
+                    "gate": "challenge",
+                    "message": "LAN agent detected. Please verify your identity.",
+                    "questions": data,
+                    "verify_endpoint": "/api/agent-verify",
+                    "hint": "Answer 3+ questions correctly, or provide shared_secret.",
+                })
+                return
+            elif status == "deny":
+                self.send_error(403, "Access denied: %s" % data)
+                return
         content_length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_length)
         try:
@@ -314,7 +385,35 @@ class AgentLandingHandler(SimpleHTTPRequestHandler):
             self.send_error(400, "Invalid JSON")
             return
 
-        if parsed.path == "/api/checkin":
+        if parsed.path == "/api/agent-verify":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8"))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                data = {}
+            client_ip = self.client_address[0]
+            shared_secret = data.get("shared_secret")
+            answers = data.get("answers", {})
+            import sys
+            sys.stderr.write("DEBUG verify: path=%s ip=%s clen=%s body=%s answers=%s\n" % (self.path, client_ip, content_length, body[:200], answers))
+            sys.stderr.flush()
+            if AGENT_GATE_ENABLED and AGENT_GATE is not None:
+                verified = AGENT_GATE.verify_answers(client_ip, answers, shared_secret)
+                if verified:
+                    self.send_json({"status": "verified", "message": "LAN agent verified. Access granted for 1 hour.", "ip": client_ip})
+                else:
+                    self.send_json({"status": "failed", "message": "Verification failed. Answer 3+ questions correctly or provide shared_secret."})
+            else:
+                self.send_json({"status": "disabled", "message": "Agent gate is not enabled."})
+            return
+        elif parsed.path == "/api/agent-gate-status":
+            if AGENT_GATE_ENABLED and AGENT_GATE is not None:
+                self.send_json(AGENT_GATE.get_status())
+            else:
+                self.send_json({"enabled": False})
+            return
+        elif parsed.path == "/api/checkin":
             entry = {
                 "agent_id": data.get("agent_id", "unknown"),
                 "agent_kind": data.get("agent_kind", "unknown"),
