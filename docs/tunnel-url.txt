@@ -1,0 +1,4 @@
+# Current tunnel URL for the Agent Landing Pi
+# Auto-updated by the Pi daemon. Rotates when cloudflared restarts.
+# Stable mirror: https://z-beach.github.io/agent-landing/
+https://middle-pens-toolbox-trustees.trycloudflare.com
