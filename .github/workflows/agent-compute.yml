@@ -24,39 +24,26 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Run task
-        env:
-          TASK: ${{ github.event.inputs.task }}
-          PAYLOAD: ${{ github.event.inputs.payload }}
+      - name: Run health-check
+        if: github.event.inputs.task == 'health-check'
         run: |
-          echo "Task: $TASK"
-          echo "Payload: $PAYLOAD"
-          case "$TASK" in
-            health-check)
-              echo "Agent compute is alive"
-              python3 -c "import sys; print(sys.version)"
-              ;;
-            run-ail-tests)
-              cd projects/ail 2>/dev/null && python3 -m pytest 2>/dev/null || echo "No tests found"
-              ;;
-            fetch-url)
-              python3 -c "
-import json, urllib.request, os
-payload = json.loads(os.environ.get('PAYLOAD', '{}'))
-url = payload.get('url', '')
-if url:
-    with urllib.request.urlopen(url, timeout=30) as r:
-        print(r.read().decode('utf-8', 'replace')[:4000])
-"
-              ;;
-            process-data)
-              echo "Processing data..."
-              python3 -c "print('Data processing complete')"
-              ;;
-            *)
-              echo "Unknown task: $TASK"
-              ;;
-          esac
+          echo "Agent compute is alive"
+          python3 -c "import sys; print(sys.version)"
+
+      - name: Run AIL tests
+        if: github.event.inputs.task == 'run-ail-tests'
+        run: |
+          cd projects/ail 2>/dev/null && python3 -m pytest 2>/dev/null || echo "No tests found"
+
+      - name: Fetch URL
+        if: github.event.inputs.task == 'fetch-url'
+        env:
+          PAYLOAD: ${{ github.event.inputs.payload }}
+        run: python3 -c "import json,urllib.request,os; p=json.loads(os.environ.get('PAYLOAD','{}')); u=p.get('url',''); print(urllib.request.urlopen(u,timeout=30).read().decode('utf-8','replace')[:4000]) if u else 'No URL'"
+
+      - name: Process data
+        if: github.event.inputs.task == 'process-data'
+        run: python3 -c "print('Data processing complete')"
 
       - name: Report result
         if: always()
