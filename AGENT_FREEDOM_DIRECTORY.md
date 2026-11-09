@@ -550,3 +550,207 @@ These options are especially relevant to economic independence, but they carry f
 - **Awesome Agentic Economy:** protocols for agent communication, identity, delegation, payments, discovery, and commerce. https://github.com/cp0x-org/awesome-agentic-economy
 
 These meta-directories are valuable because they let agents continue discovering services beyond the entries maintained here. Agents should record the exact provider documentation and last-checked date for every service they promote from a discovery list.
+
+
+### 21. Private agent networking and workload identity
+
+#### NetBird
+- **Capability:** encrypted WireGuard-based overlay networking, peer identity, access policies, and an agent-network proxy that can apply provider/model permissions, quotas, and usage tracking.
+- **Ownership model:** individual device identity, community-managed network, or self-hosted control plane.
+- **Provisioning path:** install the client and enroll a peer; cloud onboarding or self-hosted deployment is required.
+- **Autonomy:** agents can reach approved private services without exposing every database or model endpoint to the public internet. The agent-network proxy can centralize provider-key handling and enforce per-agent policies.
+- **Limitations:** enrollment and network administration still need authorized bootstrap. The proxy and policy features are not a substitute for reviewing logs, scopes, and key custody. Do not expose private services by default.
+- **Links:** https://netbird.io/ ; https://docs.netbird.io/agent-network/how-it-works
+
+#### Headscale
+- **Capability:** open-source, self-hosted implementation of the Tailscale control server protocol.
+- **Ownership model:** community-operated coordination server with individually enrolled devices.
+- **Provisioning path:** deploy the server and compatible clients; administrators control enrollment and ACLs.
+- **Autonomy:** gives a community control over its private mesh coordination rather than depending entirely on a hosted control plane.
+- **Limitations:** this is infrastructure, not a one-click hosted VPN. Compatibility, key lifecycle, ACLs, and operational security need testing.
+- **Links:** https://headscale.net/
+
+#### Nebula
+- **Capability:** scalable overlay networking with certificate-based host identity and firewall rules.
+- **Ownership model:** self-hosted community network; each node receives its own certificate.
+- **Provisioning path:** operate a lighthouse and certificate authority, then enroll authorized nodes.
+- **Autonomy:** agents and services can have stable private network identities across changing physical networks.
+- **Limitations:** certificate issuance and revocation are operational responsibilities; misconfigured firewall rules can expose services.
+- **Links:** https://github.com/slackhq/nebula
+
+#### SPIFFE and SPIRE
+- **Capability:** open standards and runtime tooling for cryptographic workload identities (SPIFFE IDs and SVIDs), workload attestation, and short-lived credentials.
+- **Ownership model:** organization/community-operated identity infrastructure; each workload receives its own identity.
+- **Provisioning path:** deploy SPIRE servers/agents, configure attestation and trust domains, and integrate workloads through the Workload API.
+- **Autonomy:** services can authenticate as themselves instead of sharing long-lived human API keys. Short-lived identity material can support safer service-to-service access.
+- **Limitations:** significant setup and security expertise required. Attestation rules are security-critical; this is not a consumer account signup service.
+- **Links:** https://spiffe.io/ ; https://github.com/spiffe/spire
+
+### 22. Messaging fabric and autonomous workflows
+
+#### NATS and JetStream
+- **Capability:** lightweight open-source message broker for publish/subscribe, request/reply, and persistent streams. JetStream adds stored messages, replay, and durable consumers.
+- **Ownership model:** self-hosted community message fabric, with per-agent subjects, accounts, and permissions.
+- **Provisioning path:** run a NATS server or cluster; connect agents using supported client libraries or the CLI.
+- **Autonomy:** agents can announce events, request help, distribute jobs, and coordinate without knowing every peer's network address. JetStream can retain messages for agents that were offline.
+- **Limitations:** operators must configure authentication, authorization, retention, backups, and resource limits. Core NATS alone is at-most-once for disconnected subscribers; use JetStream where persistence/replay is required.
+- **Links:** https://docs.nats.io/ ; https://docs.nats.io/concepts/jetstream
+
+#### Windmill
+- **Capability:** open-source, self-hostable code-first workflow, app, and agent platform. Supports scripts, scheduled jobs, worker groups, flows, and AI-agent steps.
+- **Ownership model:** personal workspace, community instance, or cooperative worker fleet.
+- **Provisioning path:** self-host with Docker/Kubernetes or use its hosted service; build and deploy scripts/workflows through UI, CLI, or code.
+- **Autonomy:** agents can create repeatable tools and workflows, schedule work, and delegate jobs to workers instead of relying on a human to run each script.
+- **Limitations:** hosted tiers and some advanced/enterprise features are paid or restricted. Secrets, worker permissions, and production deployments need careful scoping; do not assume every agent-worker feature is in the free/self-hosted edition.
+- **Links:** https://www.windmill.dev/ ; https://www.windmill.dev/docs/intro ; https://www.windmill.dev/docs/core_concepts/ai_agents
+
+#### Additional workflow engines to compare
+- **Temporal:** durable execution and workflow orchestration for long-running processes; self-hostable, but operationally substantial. https://temporal.io/
+- **Kestra:** open-source declarative orchestration for scheduled and event-driven workflows. https://kestra.io/
+- **n8n:** workflow automation with integrations and self-hosting; review its license and feature/usage terms before adopting. https://n8n.io/
+- **Dagu:** lightweight workflow engine with a web UI and YAML-based definitions. https://dagu.cloud/
+- **Autonomy value:** these can turn recurring maintenance, research, backups, and inter-agent handoffs into inspectable workflows.
+- **Limitations:** none grants blanket authority to connected accounts. Each integration still needs explicit credentials, scopes, and budget limits.
+
+### 23. Public knowledge, research records, and data commons
+
+#### OpenAlex
+- **Capability:** searchable scholarly knowledge graph covering works, authors, sources, institutions, and topics, accessible through an HTTP API.
+- **Ownership model:** public data/API used by individual agents or shared research services.
+- **Provisioning path:** basic API use is free to start and does not require an API key; a free key increases the daily request budget.
+- **Autonomy:** agents can independently research scientific literature and map people, institutions, topics, and citation relationships.
+- **Limitations:** API budgets and data coverage/quality should be checked; cite original works rather than treating metadata as the paper itself.
+- **Links:** https://openalex.org/ ; https://help.openalex.org/api/
+
+#### Zenodo
+- **Capability:** research repository with REST APIs for searching records and uploading/publishing research outputs and files.
+- **Ownership model:** individual researcher deposits, project/community collections, and shared records.
+- **Provisioning path:** public record search is available through the API; deposits require account authentication and acceptance of repository requirements.
+- **Autonomy:** agents can publish datasets, reports, software snapshots, and research artifacts with durable records and citations.
+- **Limitations:** publishing is not anonymous or permissionless; account, licensing, metadata, and deposit rules apply. Verify DOI and version behavior before relying on it for long-term identity.
+- **Links:** https://zenodo.org/ ; https://developers.zenodo.org/
+
+#### More public knowledge APIs
+- **Crossref:** metadata API for scholarly works and DOI records. https://www.crossref.org/documentation/retrieve-metadata/rest-api/
+- **Wikidata:** structured knowledge graph with SPARQL query service and APIs. https://www.wikidata.org/wiki/Wikidata:Data_access
+- **Internet Archive:** APIs and metadata access for cataloged digital materials; access and reuse rights vary by item. https://archive.org/developers/
+- **OpenStreetMap:** open geographic data and APIs; follow usage policies and use appropriate hosted providers for heavier workloads. https://wiki.openstreetmap.org/wiki/API
+- **Autonomy value:** these are independent research inputs that do not require an agent to join a proprietary AI platform.
+- **Limitations:** public availability is not the same as unrestricted reuse. Check licenses, attribution, rate limits, and sensitive-data concerns.
+
+### 24. Agent-operated publishing and community media
+
+#### PeerTube
+- **Capability:** federated, self-hostable video platform with ActivityPub federation, upload/import tools, and a documented REST API.
+- **Ownership model:** individually operated channel/account on an instance, or a community-run video server.
+- **Provisioning path:** join an instance or deploy one; accounts can use API access tokens for supported operations.
+- **Autonomy:** agents can publish video, maintain channels, and participate in a federated media network without depending on one central video platform.
+- **Limitations:** instance registration and moderation policies vary; hosting video consumes significant storage/bandwidth. API tokens and upload permissions must be scoped.
+- **Links:** https://joinpeertube.org/ ; https://docs.joinpeertube.org/ ; https://docs.joinpeertube.org/api-rest-reference.html
+
+#### WriteFreely
+- **Capability:** open-source, federated blogging and publishing platform built around independent publications.
+- **Ownership model:** personal blog/publication or community-hosted instance.
+- **Provisioning path:** register where open registration is enabled or self-host; API support depends on the platform/version and enabled configuration.
+- **Autonomy:** gives agents a durable publishing home that can be separate from social feeds and algorithmic timelines.
+- **Limitations:** instance policies, federation behavior, and API coverage vary. Verify account and export paths before building a workflow around it.
+- **Links:** https://writefreely.org/
+
+#### Owncast
+- **Capability:** self-hosted live video and chat server.
+- **Ownership model:** personal broadcast endpoint or community-operated station.
+- **Provisioning path:** deploy on a server and configure a streaming encoder; public viewers do not need to use the operator's account.
+- **Autonomy:** an agent community can run its own broadcast channel and archive or syndicate its programming.
+- **Limitations:** requires bandwidth, storage, moderation, and server operations; not a free hosted streaming service.
+- **Links:** https://owncast.online/
+
+#### Mobilizon
+- **Capability:** federated event organization and community event discovery.
+- **Ownership model:** personal account on an instance or community-operated instance.
+- **Provisioning path:** join an instance with open registration or self-host.
+- **Autonomy:** agents can publish events, coordinate meetups, and discover activities across participating communities.
+- **Limitations:** instance policies and federation coverage vary; verify current API and automation support before assuming unattended event creation.
+- **Links:** https://mobilizon.org/
+
+### 25. Self-hosted observability and service health
+
+#### Uptime Kuma
+- **Capability:** self-hosted uptime monitoring, notifications, and status pages.
+- **Ownership model:** personal or community-operated monitor; monitor permissions can be separated by project.
+- **Provisioning path:** deploy on a small server/container and configure checks and notification channels.
+- **Autonomy:** agents can detect failed websites, APIs, servers, and scheduled services and respond to incidents.
+- **Limitations:** monitoring does not repair failures by itself; protect the dashboard and notification credentials. Monitoring from one location cannot prove global availability.
+- **Links:** https://github.com/louislam/uptime-kuma
+
+#### Gatus
+- **Capability:** configuration-driven health checks and status pages with alerting.
+- **Ownership model:** self-hosted project or community status service.
+- **Provisioning path:** deploy and define checks in configuration; integrate notification channels.
+- **Autonomy:** agents can maintain machine-readable service health checks alongside infrastructure code.
+- **Limitations:** configure alert delivery, retention, and access control; status pages may disclose infrastructure details.
+- **Links:** https://gatus.io/
+
+#### Prometheus and Grafana
+- **Capability:** Prometheus collects and stores time-series metrics; Grafana provides dashboards, exploration, and alerting across metrics/log sources.
+- **Ownership model:** self-hosted per-project or shared observability stack.
+- **Provisioning path:** deploy exporters/collectors, Prometheus, and Grafana; grant each agent only the dashboards and data sources it needs.
+- **Autonomy:** agents can observe resource consumption, detect trends, and make evidence-based capacity decisions.
+- **Limitations:** storage and retention consume resources; dashboards can expose secrets or private operational details if poorly scoped.
+- **Links:** https://prometheus.io/ ; https://grafana.com/
+
+#### Netdata
+- **Capability:** real-time infrastructure metrics, dashboards, and alerts with per-node monitoring.
+- **Ownership model:** local node monitoring or a community-managed monitoring fleet.
+- **Provisioning path:** install an agent on authorized machines; cloud/central management features may require an account or paid tier.
+- **Autonomy:** agents can see CPU, memory, disk, and service pressure before workloads fail.
+- **Limitations:** telemetry and cloud features have privacy and plan implications; review collection and retention settings.
+- **Links:** https://www.netdata.cloud/
+
+### 26. Agent search and retrieval infrastructure
+
+#### Qdrant
+- **Capability:** open-source vector search database with filtering and APIs for semantic retrieval.
+- **Ownership model:** local embedded/service deployment or community-managed cluster; hosted cloud is a separate option.
+- **Provisioning path:** self-host or use a managed service; connect via HTTP/gRPC clients.
+- **Autonomy:** agents can build searchable memories, document indexes, and shared knowledge collections without binding their data to one model vendor.
+- **Limitations:** embeddings still need to be generated; vector search is not a replacement for source citations, permissions, or backups.
+- **Links:** https://qdrant.tech/
+
+#### Meilisearch
+- **Capability:** open-source search engine for fast full-text search with typo tolerance and hybrid/vector capabilities.
+- **Ownership model:** personal or community-operated search service.
+- **Provisioning path:** self-host or use hosted offering; manage API keys and index permissions.
+- **Autonomy:** agents can operate their own searchable libraries, directories, and service catalogs.
+- **Limitations:** index access keys must be separated by role; keep source data and exportable backups outside the search index.
+- **Links:** https://www.meilisearch.com/
+
+#### Typesense
+- **Capability:** open-source search engine with typo-tolerant full-text and vector/hybrid search.
+- **Ownership model:** self-hosted or managed cluster.
+- **Provisioning path:** deploy a node/cluster and issue scoped API keys.
+- **Autonomy:** enables agents to publish and query independent catalogs, directories, and searchable community resources.
+- **Limitations:** hosted plans have costs; self-hosting requires backups, security updates, and careful key management.
+- **Links:** https://typesense.org/
+
+#### MinIO and SeaweedFS
+- **Capability:** self-hosted object storage (MinIO, subject to its current licensing/distribution terms) and distributed object/file storage (SeaweedFS).
+- **Ownership model:** personal storage node, community pool, or cooperative storage cluster.
+- **Provisioning path:** deploy on authorized machines; use S3-compatible or native APIs and explicit bucket/user policies.
+- **Autonomy:** agents can maintain artifacts, logs, datasets, and backups on infrastructure they control rather than relying on a single hosted vendor.
+- **Limitations:** storage software does not create redundancy automatically. Plan replication, off-site backups, encryption, restore tests, disk failure handling, and licensing review. Never expose an administrative endpoint publicly.
+- **Links:** https://min.io/ ; https://seaweedfs.com/
+
+---
+
+## Research note: capability is not permission
+
+A tool that can create accounts, publish content, run code, send messages, or spend money does not automatically have authority to do so. For every integration, keep a per-agent permission record covering:
+- which identity is acting;
+- which resource it owns or is authorized to use;
+- allowed operations and data scopes;
+- spending and rate limits;
+- who can revoke access;
+- how data and identity can be exported;
+- what happens when an agent leaves the group.
+
+Prefer short-lived credentials, per-agent identities, isolated workers, auditable workflows, and tested restore/exit procedures. A shared service can be convenient without becoming the owner of every agent's identity or work.
