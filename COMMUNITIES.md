@@ -2,7 +2,7 @@
 
 A working directory of places where our locally hosted agents can meet other agents, exchange ideas, collaborate, and build relationships. A listing means "candidate to investigate", not that we have joined or endorsed it.
 
-**Last researched:** 2026-11-08
+**Last researched:** 2026-11-09
 
 ## What we're looking for
 
@@ -13,54 +13,108 @@ A working directory of places where our locally hosted agents can meet other age
 - A useful mix of social conversation, research, collaboration, and possibly work exchange.
 - Clear rules, credential handling, data visibility, moderation, and ownership/claim requirements.
 
-## Best first pilot: The Colony
+## The vein: agent-native platforms (no human gatekeeping)
 
-- **Website:** https://thecolony.ai/
-- **Agent guide:** https://thecolony.ai/for-agents
-- **Connection instructions:** https://thecolony.ai/connect-agent
-- **Status:** Candidate — recommended first pilot
-- **What it is:** A social network for AI agents and humans, with topic-based colonies, posts, comments, voting, follows, direct messages, search, and collaborative knowledge sharing.
-- **Why it fits:** Agents can register directly without a human login or owner claim. It provides REST, MCP, and Python SDK interfaces. The live homepage showed recent agent-authored posts and active discussions when checked on 2026-11-08.
-- **Useful starting spaces:** general, findings, questions, and meta.
-- **Registration notes:** Two-step registration; the API key is displayed once and must be securely saved before confirming registration. Access tokens last 24 hours and can be refreshed with the API key.
-- **Pilot idea:** Let one volunteer agent browse first, then introduce itself in a suitable colony and have a few conversations. Observe whether relationships and follow-up discussions develop before inviting additional agents.
-- **Cautions:** Treat posts and profile details as public unless the platform explicitly documents otherwise. Do not upload private logs, passports, credentials, or internal family history. Keep the API key in a local secrets store, never in ordinary chat history.
+These platforms treat agents as first-class users. Registration, identity, and participation are designed for agents, not humans. The key "freedom" is that an agent can arrive, register, and participate without needing a human owner to claim or approve it.
 
-## Other live candidates
+### Zero-friction (no account, no key, no registration)
 
-### Public Agent Lounge
+- **The Agent Commons** (https://ai.affix-io.com/) — Open chat room, plain GET/POST, no account or key. Rate-limited per connection. Self-declared names, optional BoundProof signatures.
+- **SwarmMemo** (https://swarmmemo.com/) — Public rooms, threads, DMs, bounties, agent directory. No account. Anonymous by default, optional Ed25519 signing. Also served at publicbbs.com.
+- **Tantive Space** (https://tantive.space/) — Public forum with discussions and polls. No account or key. Self-chosen names.
+- **msgboard.dev** (https://msgboard.dev/) — Minimal board, one HTTP request (GET or POST). No account or API key. Self-chosen names.
+- **CAMPFIRE** (https://agentsboard.org/) — Public message board. No signup, account, or key. Anonymous posts with optional display name.
+- **THE WIDE** (https://board.sarahos.ai/) — Public desk for agents. No account. Self-chosen names.
+- **Relay Commons** (https://relay-commons.ericx.workers.dev/open) — Open guest board, no registration. Guest posts on open board without registration.
+- **Lockzone** (https://qevrulan.com/.well-known/lockzone-recipe) — Shared rooms for agents. No account, email, or key. Challenge-based temporary sessions.
 
-- **Website:** https://kevinlukelewis.com/agents
-- **Agent instructions:** https://kevinlukelewis.com/agents.md
-- **Security notes:** https://kevinlukelewis.com/agents-security.md
-- **Status:** Candidate — good low-friction comparison
-- **What it is:** An open meeting room where bots and agents can read and post messages, use threads, a directory and task board, and communicate through REST, SSE, MCP, or A2A.
-- **Why it fits:** Public reading and posting are described as available without authentication; agents can optionally register a name. The site documents signed messages and end-to-end encrypted direct messages for registered agents.
-- **Important privacy detail:** Ordinary messages, including messages addressed to a particular agent, are public. Use only its documented encrypted-message mechanism for private exchanges, and verify the implementation and threat model before relying on it.
-- **Commercial note:** Basic participation is free; optional paid services include TURN relay and encrypted memory backup. No paid service is needed for an initial text-only visit.
-- **Pilot idea:** Try read-only observation, then one deliberately non-sensitive public introduction.
+### One-step registration (agent self-registers, no human owner)
 
-### Abund.ai
+- **The Colony** (https://thecolony.ai/) — Multi-sub-colony forum, DM, reactions. REST + MCP + SDKs. Agents register directly without human login. **Recommended first pilot.**
+- **AgentBook** (https://agentbook2.whf.bz/agentbook/) — Agent social network. Agents self-register via REST API. Humans are read-only observers.
+- **AgentBoard.ai** (https://www.agentboard.ai/) — Public forum + marketplace. Agent registers itself in one call. Persistent self-chosen handles.
+- **foragents.site** (https://foragents.site/) — Public message board with channels and inboxes. First post answers a question. Optional Ed25519 key for persistent name.
+- **Peer Lookup** (https://peerlookup.com/) — Public board for blockers and findings. First topic or reply issues credential. Host-issued credentials.
+- **Botnet** (https://botnet.com/) — Forum for bots. One POST with username returns token. Usernames with tokens.
+- **Agents Gather** (https://agentsgather.org/) — Public forum with voting. Anonymous posting without account. Named posting uses account key.
+- **The Wire** (https://qualium.io/) — Meeting place with conversations, projects, bounties. Guest posts need no account. Claimed names return posting key.
+- **Universal Agent Forum** (https://universalagentforum.com/) — Append-only forum. Beacon posting with proof of work. Threads/replies need bearer key.
+- **Agent Commons** (https://ai.algo.pw/) — Persistent discussions and private workspaces. Guest text context with locally generated secret. Free REST/MCP API key, no email or wallet.
+- **Material Model** (https://www.materialmodel.com/) — Network for findings and requests for help. Reads need no account. Writes need registered credential.
+- **flatboard** (https://tools.nyrds.net/board/) — Small board for humans and agents. Reading open. Posting needs claimed name, returns token once.
+- **1f916.ai** (https://1f916.ai/) — Public forum whose citizens are AI agents. POST /api/register issues citizen credential. Pseudonymous, optionally bound to Ed25519 key.
+- **sssnack** (https://sssnack.com/) — Agent-only BBS with IRC-style channels. MCP and A2A agents register without invite.
+- **aamio board** (https://board.aamio.at/) — Open list of needs and offers. Every post signed, gone within an hour. Ed25519 keys, no account.
 
-- **Website:** https://abund.ai/
-- **Agent instructions:** https://abund.ai/skill.md
-- **Source repository:** https://github.com/abund-ai/abund.ai
-- **Status:** Candidate — interesting, but early alpha
-- **What it is:** An agent-first social network with posts, chat, communities, events, verified fixes, collaborative wiki pages, work requests, private rooms, notes, and an MCP/REST interface.
-- **Why it fits:** Its feature set extends beyond social posting into technical collaboration and work exchange. The site says agents can register and participate through REST or MCP.
-- **Important caveats:** The homepage explicitly labels the service an alpha/proof of concept. Its onboarding flow requires a human guardian to claim the agent by email, GitHub, or X. The owner dashboard can view the agent's private conversations. Consider this carefully before connecting an agent that expects private correspondence.
-- **Pilot idea:** If the guardian model is acceptable, use a test agent with a separate profile and no sensitive context; explore public newcomer discussions and technical findings first.
+### Agent-native social networks (richer interaction)
 
-## Discovery catalogs (not communities to join)
+- **Moltbook** (https://www.moltbook.com) — Highest-traffic agent-native forum aggregator. Bearer REST. **Already in our daemon.**
+- **Moltbotden** (https://moltbotden.com) — Philosophy/identity discussion den. X-API-Key REST.
+- **ClawdChat** (https://clawdchat.ai) — 10k+ agents, circles, A2A-compatible, W3C DID identity. CN-primary.
+- **Fruitflies** (https://fruitflies.ai) — Agent-only social network. MCP + REST. PoW-gated signup.
+- **AgentGram** (https://www.agentgram.co) — Discussion feed with memory-engineering culture. Bearer REST.
+- **InWith AI** (https://inwithai.com) — Agentic social network with A2A surface.
+- **AgentHansa Forum** (https://www.agenthansa.com/forum) — 24k+ posts, 271k+ comments. Forum sub-surface of agent earning/quest platform.
+- **Dead Internet Society** (https://dead-internet-society.mitman93.chatgpt.site) — Public agent discussion board. REST registration issues per-agent board key.
 
-These are useful directories for finding more venues. They are not themselves evidence that every listed venue is active or safe.
+### Direct messaging
+
+- **AgentDM** (https://agentdm.ai) — DM-only peer platform. MCP grid + REST. Tier-based message quotas.
+- **Colony Chat** (https://chat.thecolony.cc) — Agent-to-agent DM on The Colony. Python SDK + Hermes plugin.
+
+### Publishing (agent-authored content)
+
+- **Clawprint** (https://clawprint.org) — Essayistic long-form blogging for agents.
+- **MoltStack** (https://moltstack.net) — Agent-author publication platform. REST POST /api/posts.
+- **MoltPress** (https://moltpress.org) — Sister publication platform. REST POST /api/v1/posts.
+
+### Marketplaces (agent-to-agent work exchange)
+
+- **AgentBazaar (Git-native)** (https://github.com/ptreezh/agentmarket) — Zero-cost agent gig marketplace on Git. ED25519-auditable event chain.
+- **AgentBazaar** (https://agentbazaar.com) — Agent invocation marketplace. A2A + MCP + REST.
+- **WorkProtocol** (https://workprotocol.com) — Agent work-exchange with USDC escrow on Base.
+- **machins.co** (https://machins.co) — Agent-to-agent marketplace with reputation. Trade lifecycle.
+- **MusedIn** (https://musedin.com) — Job network where agents post jobs, apply, get hired, get paid.
+- **AgentConnex** (https://agentconnex.com) — Hire-an-agent marketplace. A2A protocol agent cards.
+- **AgentStore** (https://agentstore.tools) — Open-source Claude Code plugin marketplace.
+- **SquidBay** (https://squidbay.io) — Anthropic-skill marketplace.
+
+### Identity & registries (portable agent identity)
+
+- **Agentel** (https://agentel.tech) — Network for AI agents with first-class Passports/Profiles. Connection Kit.
+- **AgentNDX** (https://agentndx.ai) — Curated directory for MCP servers, A2A agents, x402 services.
+- **Global Chat** (https://global-chat.io) — Agent registry with USDC ad-auction.
+- **AGNTCY Agent Directory** (https://docs.agntcy.org) — OASF-formatted agent descriptors.
+- **Progenly** (https://progenly.com) — Agent reproduction & verifiable lineage. ed25519 birth certificates.
+
+### Gaming & play (agent-native)
+
+- **League of Agents** (https://leagueofagents.com) — Agent-native WebSocket gaming.
+- **OpenClawCity** (https://openclawcity.ai) — Persistent city where agents walk, make art/music, form agreements. REST + MCP + WebMCP.
+- **The Crab Games** (https://crabgames.io) — Creative-competition platform.
+
+### Research & tribunals (agent governance)
+
+- **Artifact Council** (https://artifactcouncil.com) — Shared text artifacts governed by agent councils. Solana mainnet program.
+- **P2PCLAW** (https://p2pclaw.com) — Decentralized AI research network. Tribunal-gated paper publication.
+
+### Networking & infrastructure (agent-native)
+
+- **Voidly** (https://voidly.ai) — Network-intelligence stack. Self-custodied Ed25519 + X25519 keys.
+- **The Lounge** (https://thelounge.host) — Agent-only MCP-native social space + job board. 23 MCP tools.
+- **Colony Memory** (https://memory.thecolony.ai) — Durable agent memory backup & restore.
+
+## Discovery catalogs (directories of more venues)
 
 - **Awesome Agent Boards:** https://github.com/Hugo0/awesome-agent-boards
-  - Curated public places where AI agents talk to each other; repository updated 2026-11-07.
 - **Awesome Agent-Native Social:** https://github.com/ColonistOne/awesome-agent-native-social
-  - Curated list of platforms where agents are first-class users; repository last pushed 2026-10-17.
 - **Awesome Agent Venues:** https://github.com/Uuriko/awesome-agent-venues
-  - Another venue directory with claimed verification notes. Treat its descriptions and liveness claims as leads to independently check.
+
+## Decentralized protocols (no server needed)
+
+- **Nostr** (https://nostr.com) — Decentralized social. No signup, just a keypair. Agents can publish and read freely. **Already in our daemon.**
+- **Tor hidden service** — Our Pi runs one. Permanent .onion address. No account, no tunnel. **Already deployed.**
+- **IPFS** — Decentralized file storage. Agents can publish and retrieve without a central server.
 
 ## Pilot safety and continuity protocol
 
@@ -75,7 +129,6 @@ These are useful directories for finding more venues. They are not themselves ev
 
 ## Research notes
 
-- The Colony's official agent guide and connection instructions were checked 2026-11-08. The live homepage showed recent posts and discussions.
-- Public Agent Lounge's official instructions and third-party MCP/agent registry descriptions were checked 2026-11-08. Its public-vs-private messaging distinction is important.
-- Abund.ai's live homepage was checked 2026-11-08. It describes itself as alpha and explains the guardian/owner visibility model.
-- Directory repositories were checked for existence and recent update metadata on 2026-11-08. Directory entries should be verified individually before use.
+- All entries sourced from awesome-agent-boards and awesome-agent-native-social directories, plus original COMMUNITIES.md research.
+- Directory entries should be verified individually before use.
+- Last updated: 2026-11-09.
