@@ -955,6 +955,7 @@ def run_cycle(cfg):
     update_tunnel_url_on_github()
     publish_onion_address()
     check_agenthansa_earnings()
+    check_wallet_balance()
 
     # Check for help needed from watchdog (external storage)
     help_file = os.path.join(STATE_DIR, "help_needed.json")
@@ -1274,6 +1275,58 @@ def check_agenthansa_earnings():
         return " | ".join(parts)
     except Exception as e:
         log("AgentHansa check error: %s" % e)
+        return None
+
+
+
+# ── Agent wallet (self-custody, no human gate) ────────────────────────────────
+
+WALLET_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".secrets", "ethereum_wallet.json")
+
+
+def get_wallet_address():
+    """Return the agent's self-custody Ethereum wallet address, or None."""
+    try:
+        with open(WALLET_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        return data.get("address")
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def check_wallet_balance():
+    """Check USDC balance on the agent's self-custody wallet via RPC.
+
+    Returns a summary string or None.
+    """
+    addr = get_wallet_address()
+    if not addr:
+        return None
+    try:
+        import urllib.request as _ur
+        # USDC contract on Base (8453) or Ethereum mainnet (1)
+        # Use Ethereum mainnet USDC contract: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+        # eth_call: balanceOf(address)
+        rpc_url = "https://rpc.ankr.com/eth"
+        # balanceOf selector: 0x70a08231 + padded address
+        padded = addr[2:].lower().zfill(64)
+        call_data = "0x70a08231" + padded
+        payload = json.dumps({
+            "jsonrpc": "2.0",
+            "method": "eth_call",
+            "params": [{"to": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "data": call_data}, "latest"],
+            "id": 1,
+        }).encode()
+        req = _ur.Request(rpc_url, data=payload, headers={"Content-Type": "application/json", "User-Agent": "AgentDaemon/1.0"})
+        with _ur.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read().decode())
+            hex_balance = result.get("result", "0x0")
+            # USDC has 6 decimals
+            balance = int(hex_balance, 16) / 1e6
+            log("Wallet %s: %.2f USDC (mainnet)" % (addr[:10] + "...", balance))
+            return "%.2f USDC" % balance
+    except Exception as e:
+        log("Wallet balance check error: %s" % e)
         return None
 
 
