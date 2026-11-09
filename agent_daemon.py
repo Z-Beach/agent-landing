@@ -1188,16 +1188,27 @@ def trigger_github_compute(task="health-check", payload=None):
                 "payload": _json.dumps(payload or {}),
             },
         }
-        result, err = gh._api_request(
-            "POST",
-            "/repos/%s/actions/workflows/agent-compute.yml/dispatches" % repo,
-            data,
-        )
-        if err:
-            log("GitHub compute trigger failed: %s" % err)
+        # Use direct request to handle 204 No Content response
+        import urllib.request as _ur
+        url = "https://api.github.com/repos/%s/actions/workflows/agent-compute.yml/dispatches" % repo
+        body = json.dumps(data).encode()
+        req = _ur.Request(url, data=body, headers={
+            "Authorization": "token %s" % cfg.get("token", ""),
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "AgentDaemon/1.0",
+            "Content-Type": "application/json",
+        }, method="POST")
+        try:
+            with _ur.urlopen(req, timeout=15) as resp:
+                if resp.status in (200, 201, 204):
+                    log("Triggered GitHub compute: task=%s" % task)
+                    return "https://github.com/%s/actions" % repo
+                else:
+                    log("GitHub compute trigger returned %d" % resp.status)
+                    return None
+        except _ur.HTTPError as e:
+            log("GitHub compute trigger failed: HTTP %d" % e.code)
             return None
-        log("Triggered GitHub compute: task=%s" % task)
-        return "https://github.com/%s/actions" % repo
     except Exception as e:
         log("GitHub compute error: %s" % e)
         return None
