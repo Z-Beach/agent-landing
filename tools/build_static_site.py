@@ -52,6 +52,8 @@ def copy_projects():
         if os.path.isdir(src) and name != "__pycache__":
             shutil.copytree(src, os.path.join(dest, name), dirs_exist_ok=True,
                             ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".git"))
+        elif os.path.isfile(src):
+            shutil.copy2(src, os.path.join(dest, name))
 
 
 def read_description(pdir):
