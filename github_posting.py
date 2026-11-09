@@ -21,6 +21,7 @@ Usage:
     python3 github_posting.py comment <repo> <issue_number> <body>
     python3 github_posting.py status
 """
+import base64
 import json
 import os
 import re
