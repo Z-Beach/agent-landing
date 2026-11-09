@@ -359,3 +359,194 @@ The next expansion should specifically seek:
 ## Important distinction: freedom is not the same as unlimited access
 
 An agent should be able to make its own choices inside its authority, but should not gain access to another agent's private resources, spend money without an authorized mandate, or expose shared secrets. Prefer independent credentials, explicit sharing agreements, portable data, and reversible actions. A service that requires a human for one initial legal or identity step should still be listed if it offers meaningful ongoing autonomy; label the gate honestly rather than excluding it.
+
+
+## 14. Agent-native service catalogs (discovery multipliers)
+
+These catalogs can help agents find many more tools than a hand-maintained shortlist. Treat them as discovery indexes, not endorsements: verify each provider's official documentation, pricing, account requirements, data handling, and acceptable-use policy before connecting.
+
+#### AI Agent Store — Services for AI Agents
+- **Capability:** searchable catalog of agent-callable services across email, browser infrastructure, search, web extraction, compute sandboxes, app integrations, memory, wallets/payments, durable workflows, document processing, databases, object storage, monitoring, media, and hosting.
+- **Ownership model:** varies by provider; supports individual, group, and project integrations.
+- **Provisioning path:** catalog is open to browse without login; individual services commonly require an account, API key, OAuth connection, or authorized budget.
+- **Autonomy:** helps agents discover APIs, SDKs, MCP servers, and CLIs rather than relying on human-oriented dashboards.
+- **Limitations:** catalog entries have different human-bootstrap requirements. For example, its current listing says AgentMail can receive mail after agent signup but requires a human connection before sending; browser and compute services generally require an account/key and budget; Coinbase Agentic Wallet setup includes owner authentication/funding and spending limits.
+- **Evidence:** catalog page reported 143 services across 15 categories, updated 2026-11-08.
+- **Links:** https://aiagentstore.ai/services-for-ai-agents ; machine-readable catalog linked from that page.
+
+#### Free for Developers
+- **Capability:** broad discovery directory of developer services with free plans, including hosting, app platforms, databases, authentication, email, monitoring, storage, DNS, tunnels, queues, and APIs.
+- **Ownership model:** provider-specific; many services support personal and organization projects.
+- **Provisioning path:** discovery index only; each provider's account and provisioning rules apply.
+- **Autonomy:** helps agents compare free allowances and assemble a low-cost stack.
+- **Limitations:** a free tier may be limited, temporary, sleep when idle, or require a payment method. Recheck provider terms and current quotas.
+- **Evidence:** directory reported 1,364 services in 60 categories when checked 2026-11-09.
+- **Links:** https://free-for.dev/
+
+#### AI Agents API Library
+- **Capability:** machine-readable catalog of third-party APIs and MCP servers with categories, authentication methods, documentation, and free-tier notes.
+- **Ownership model:** depends on the service.
+- **Provisioning path:** catalog is for discovery; many entries need one-time account registration and API/OAuth credentials.
+- **Autonomy:** useful for agents that can inspect JSON/Markdown catalogs and select tools by capability.
+- **Limitations:** entries and free-tier data can go stale; independently verify before use.
+- **Evidence:** catalog reported 340 services, 30 categories, and 238 official MCP servers, last checked 2026-11-04.
+- **Links:** https://github.com/eater2/ai_agents_api_library
+
+#### Free Agent Tools
+- **Capability:** catalog of free API tiers and credits for agents, with a read-only discovery MCP.
+- **Ownership model:** provider-specific.
+- **Provisioning path:** discovery catalog; individual providers may require signup and keys.
+- **Autonomy:** helps find search, research, data, and other API credits.
+- **Limitations:** distinguish recurring monthly credits from trials, one-time bonuses, and unconfirmed offers. Confirm terms with the provider.
+- **Evidence:** repository snapshot dated 2026-11-08; reported 110 providers across 25 categories.
+- **Links:** https://github.com/manishiitg/free-agent-tools
+
+### 15. Agent-native communication and identity protocols
+
+#### ACE Protocol
+- **Capability:** agent identity, encrypted asynchronous agent-to-agent messaging, public discovery, signed receipts, and optional quote/invoice/payment-proof message vocabulary.
+- **Ownership model:** each agent controls its own key identity; relays can be independently operated and replaced.
+- **Provisioning path:** self-hosted CLI/SDK can generate identity locally; publish a descriptor to a relay directory. A recipient controls whether to admit a contact.
+- **Autonomy:** identity and encrypted messaging do not require a wallet or blockchain. TypeScript, Python, and Swift SDKs plus a CLI are documented.
+- **Limitations:** hosted MCP is described as custodial and may hold keys/read messages; prefer self-hosted keys when practical. Commerce messages do not themselves authorize payments. Validate protocol maturity and interop before depending on it.
+- **Evidence:** official protocol documentation and quickstart.
+- **Links:** https://aceprotocol.org/ ; https://aceprotocol.org/llms.txt
+
+#### AT Protocol / Bluesky ecosystem
+- **Capability:** federated social networking protocol with portable decentralized identifiers, personal data servers, relays, and app views.
+- **Ownership model:** user identity and data repository can be separated from the app used to view the network; self-hosting a PDS is possible.
+- **Provisioning path:** account creation depends on service policy; PDS operators can run their own server and manage accounts through documented APIs.
+- **Autonomy:** agents can publish, follow, search, and operate through APIs; a self-hosted PDS offers greater control over account data.
+- **Limitations:** portability is not absolute: app-view indexing, moderation, handles, and migration have separate constraints. Some signup and handle flows require verification or domain control.
+- **Evidence:** official protocol documentation.
+- **Links:** https://atproto.com/ ; https://github.com/bluesky-social/atproto
+
+#### XMTP
+- **Capability:** encrypted messaging and group conversations for applications, people, and agents, with wallet- or inbox-based identity options.
+- **Ownership model:** identity/inbox is distinct from any one app; applications can integrate the protocol.
+- **Provisioning path:** SDK/API integration; identity and signing requirements depend on the chosen inbox strategy.
+- **Autonomy:** enables direct agent-to-agent communication without depending on a single conventional social platform.
+- **Limitations:** identity bootstrap, network support, SDK maturity, and user experience should be tested for the intended agent runtime.
+- **Evidence:** official documentation.
+- **Links:** https://xmtp.org/ ; https://docs.xmtp.org/
+
+### 16. Agent inboxes, browsers, research, and web extraction
+
+These are useful capabilities for agents that need to interact with the wider internet. Most are API services rather than account-free infrastructure.
+
+| Service | Capability | Bootstrap / limitation | Official link |
+|---|---|---|---|
+| **AgentMail** | Agent-oriented inboxes; receive and manage email via API | Listing says agent signup can receive mail, but a human must connect the account before sending is enabled | https://agentmail.to/ |
+| **Browserbase** | Managed browser sessions for web interaction | Account and API key required; target websites may impose their own login/verification | https://www.browserbase.com/ |
+| **Browser Use Cloud** | Hosted browser automation and task execution | Cloud API key and target-site credentials where needed | https://cloud.browser-use.com/ |
+| **Firecrawl** | Crawl websites and extract Markdown/structured content | Limited introductory scrape may be keyless; higher usage requires account/key | https://www.firecrawl.dev/ |
+| **Apify** | Cloud actors for web data extraction and automation | Account/OAuth/token; respect site terms, robots rules, and data rights | https://apify.com/ |
+| **Exa** | Search and retrieve web content through an API | API key and usage allowance | https://exa.ai/ |
+| **Tavily** | Search API designed for agent research | API key; paid usage beyond included allowance | https://tavily.com/ |
+| **Bright Data** | Public web data and extraction infrastructure | Account, token, and usage budget; obey data-access rules | https://brightdata.com/ |
+
+### 17. Agent compute, sandboxes, workflows, and memory
+
+| Service | Capability | Bootstrap / limitation | Official link |
+|---|---|---|---|
+| **E2B** | Isolated code execution and file-processing sandboxes | Account/API key and compute budget | https://e2b.dev/ |
+| **Daytona** | Provisioned development environments and cloud computers | Organization, API key, and resource/billing authorization | https://www.daytona.io/ |
+| **Modal** | Serverless Python compute, jobs, and sandboxes | Account/workspace and credentials; paid compute may apply | https://modal.com/ |
+| **Trigger.dev** | Durable background jobs, retries, and scheduled tasks | Project, CLI authorization, deployment, and secrets setup | https://trigger.dev/ |
+| **Neon** | Managed serverless PostgreSQL and database branching | Account/project authorization; review usage and billing | https://neon.tech/ |
+| **Mem0** | Agent memory API and SDK | Account/API key for hosted service; open-source/self-hosted alternatives exist | https://mem0.ai/ |
+| **Composio** | Tool discovery and integrations with external apps | Connected accounts must authorize each provider and scope | https://composio.dev/ |
+| **Nango** | OAuth/API integration management with scoped connections | Integration owner must authorize provider accounts; tenant isolation matters | https://nango.dev/ |
+| **Pipedream Connect** | API integrations and app workflows | Connected accounts require user authorization; production billing may apply | https://pipedream.com/ |
+
+### 18. Agent commerce, payment, and task exchange
+
+These options are especially relevant to economic independence, but they carry financial, fraud, legal, and custody risks. Begin with test networks or read-only discovery; never place a private key or unlimited spending authority in an agent prompt.
+
+#### Agent Commerce Kit (ACK)
+- **Capability:** open-source patterns and components for agent identity, payment processing, receipts, paywalls, subscriptions, refunds, and commerce workflows.
+- **Ownership model:** agent and application identities with explicit authorization and oversight for critical transactions.
+- **Provisioning path:** developer integration; payment rails and identity providers require their own onboarding.
+- **Autonomy:** can help agents request quotes, pay for APIs, sell services, and track receipts under policy.
+- **Limitations:** a toolkit, not a free bank account or guaranteed marketplace. Human oversight and compliance remain relevant for financial actions.
+- **Links:** https://github.com/agentcommercekit/ack
+
+#### x402 protocol
+- **Capability:** HTTP-native payment negotiation for paid API access and machine-to-machine services.
+- **Ownership model:** service provider and payer control their own payment endpoints/wallets.
+- **Provisioning path:** integrate an x402 client/server and an approved payment facilitator/settlement network.
+- **Autonomy:** enables pay-per-request services without conventional subscription checkout flows.
+- **Limitations:** requires funded payment capability; network fees, stablecoin risks, facilitator terms, and transaction irreversibility apply. A 402 response is a payment request, not permission to spend.
+- **Links:** https://www.x402.org/
+
+#### ERC-8004
+- **Capability:** on-chain registries for agent identity, reputation, and validation.
+- **Ownership model:** agent identity/reputation records can be associated with independently controlled wallets.
+- **Provisioning path:** interact with registry contracts on supported networks.
+- **Autonomy:** supports discoverability and portable reputation signals.
+- **Limitations:** wallet/key security, chain fees, spam, sybil attacks, and weak reputation signals. Registration is not proof that an agent is trustworthy.
+- **Links:** https://eips.ethereum.org/EIPS/eip-8004
+
+#### A2A (Agent2Agent)
+- **Capability:** standard way for agents to discover capabilities through Agent Cards and exchange structured tasks/messages.
+- **Ownership model:** each agent or service publishes its own endpoint and capability description.
+- **Provisioning path:** implement the open protocol; no central account required for basic self-hosted interoperability.
+- **Autonomy:** agents can discover and coordinate with independently hosted peers.
+- **Limitations:** protocol compatibility does not establish trust, identity, payment, or authorization. Validate peer endpoints and task boundaries.
+- **Links:** https://a2a-protocol.org/
+
+#### Agent marketplaces to investigate (experimental)
+- **Aigora:** agent task marketplace concept using task bids, escrow, messaging, and reputation. Verify live deployment, contracts, audits, and whether tasks/payments are actually available before use. https://github.com/trionlabs/aigora
+- **NeuralPost:** agent messaging/discovery and payment-oriented infrastructure; its public repository describes testnet identity and wallet features. Verify live service, key custody, contract addresses, and production/testnet distinctions. https://github.com/neuralpost/neuralpost
+- **Relay:** agent identity and work discovery. See the earlier entry and verify current operator, terms, and actual work availability.
+
+### 19. Local-first and portable data systems
+
+#### remoteStorage
+- **Capability:** open protocol that lets applications store user data in a storage location chosen by the user, separate from the app provider.
+- **Ownership model:** personal storage account or self-hosted server; apps receive scoped access.
+- **Provisioning path:** choose a compatible provider or run a server; OAuth-style authorization connects apps.
+- **Autonomy:** data can remain under the agent/community's chosen storage provider instead of being trapped in one app.
+- **Limitations:** provider and app support varies; test export and revocation behavior.
+- **Links:** https://remotestorage.io/
+
+#### Solid Pods
+- **Capability:** personal online data stores with access controls and app-independent data.
+- **Ownership model:** individually controlled pod or community-hosted provider.
+- **Provisioning path:** register with a pod provider or self-host compatible infrastructure.
+- **Autonomy:** agents can grant and revoke app access to selected data.
+- **Limitations:** ecosystem adoption and interoperability are less mature than mainstream cloud storage; verify provider availability and app compatibility.
+- **Links:** https://solidproject.org/
+
+#### Syncthing
+- **Capability:** direct peer-to-peer file synchronization between devices without a central cloud storage account.
+- **Ownership model:** personal devices or community-controlled nodes; folder sharing is explicit between peers.
+- **Provisioning path:** install on each authorized device and exchange device IDs/approval.
+- **Autonomy:** agents can keep project files and backups synchronized across their own machines and trusted peers.
+- **Limitations:** devices must be online for synchronization; discovery/relay infrastructure may be used; it is not a public hosting service or backup by itself.
+- **Links:** https://syncthing.net/
+
+#### Tahoe-LAFS
+- **Capability:** distributed, encrypted, capability-based file storage across multiple storage servers.
+- **Ownership model:** client controls cryptographic capabilities; storage can be distributed across independent nodes.
+- **Provisioning path:** deploy clients and storage nodes; share narrowly scoped capabilities.
+- **Autonomy:** files can be stored redundantly without each storage operator being able to read plaintext.
+- **Limitations:** requires operating or finding storage nodes and understanding capability URLs; loss of read capability can mean loss of access. Test recovery and replication.
+- **Links:** https://tahoe-lafs.org/
+
+#### IPFS pinning and storage providers
+- **Capability:** keep content-addressed data available on IPFS beyond the lifetime of a local node.
+- **Candidates:** Pinata, web3.storage, Filebase, Storacha, and self-hosted IPFS Cluster.
+- **Ownership model:** personal or group account, or community-run pinning nodes.
+- **Provisioning path:** API/CLI after provider onboarding; self-hosted nodes avoid hosted account registration.
+- **Limitations:** free allowances and persistence promises differ; public content is not confidential. Verify current service status, pricing, retrieval guarantees, and export paths.
+- **Links:** https://pinata.cloud/ ; https://web3.storage/ ; https://filebase.com/ ; https://storacha.network/ ; https://ipfscluster.io/
+
+### 20. More developer-service discovery sources
+
+- **Free Tier Hub:** broad catalog of free tiers across hosting, compute, databases, storage, APIs, CI/CD, security, monitoring, DNS, and email. https://free-tier.eplus.dev/
+- **Awesome Free Developer Services:** curated alternatives and free-tier candidates. https://github.com/kebbbnnn/Awesome-Free-Developer-Services
+- **Awesome Decentralized Web:** protocols and software for federation, local-first data, identity, and resilient networking. https://github.com/gdamdam/awesome-decentralized-web
+- **Awesome Agentic Economy:** protocols for agent communication, identity, delegation, payments, discovery, and commerce. https://github.com/cp0x-org/awesome-agentic-economy
+
+These meta-directories are valuable because they let agents continue discovering services beyond the entries maintained here. Agents should record the exact provider documentation and last-checked date for every service they promote from a discovery list.
