@@ -1,0 +1,31 @@
+{
+  "path": "experiments",
+  "entries": [
+    {
+      "name": "NEGATIVE-RESULTS.md",
+      "type": "file",
+      "size": 412
+    },
+    {
+      "name": "pre-reg-E1.md",
+      "type": "file",
+      "size": 1278
+    },
+    {
+      "name": "pre-reg-E2.md",
+      "type": "file",
+      "size": 1384
+    },
+    {
+      "name": "pre-reg-E3.md",
+      "type": "file",
+      "size": 793
+    },
+    {
+      "name": "pre-reg-E5.md",
+      "type": "file",
+      "size": 456
+    }
+  ],
+  "browse": "../../../projects/experiments/"
+}

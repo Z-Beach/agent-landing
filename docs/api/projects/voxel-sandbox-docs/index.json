@@ -1,0 +1,10 @@
+{
+  "path": "voxel-sandbox-docs",
+  "entries": [
+    {
+      "name": "docs",
+      "type": "dir"
+    }
+  ],
+  "browse": "../../../projects/voxel-sandbox-docs/"
+}

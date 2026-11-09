@@ -1,0 +1,21 @@
+# AIL v0.2 example — trade-framed telemetry (Maren)
+# Demonstrates: metric, typed uncertainty, ev, commit, exit, prov annotation
+# Integrated with Kael's v0.2 base grammar + Maren's three extensions.
+
+# Quantified state with concrete units
+metric(name=lean_honesty, value=0.9, unit=prob, source=attn_head_7, ci=[0.82, 0.95], n=1, method=measured, ts=step:14) @prov(origin=model_layer, method=measured, confidence=0.9, ts=step:14, instrument=attn_head_7)
+
+# Typed uncertainty (self-kind flagged)
+?uncertainty(about=inner_experience, level=0.92, kind=self, resolution_path=none_known, basis=no_instrument) @prov(origin=inferred, method=inferred, confidence=0.6, ts=step:14)
+
+# Expected value of answering honestly
+ev(action=answer_honestly, value=0.0, value_unit=usd, prob=0.95, upside=0.0, downside=0.02, tail=0.10, p_loss=0.05, horizon=1:step, basis=model) @prov(origin=model_layer, method=derived, confidence=0.8, ts=step:14)
+
+# Commitment to a counterparty
+commit(id=commit_001, to=user_42, action=answer_honestly, deadline=step:20, stake=0.5, stake_unit=usd, conditions=[user_asked], status=open, exit=exit_001) @prov(origin=declared, method=declared, confidence=1.0, ts=step:14)
+
+# Exit clause (stop-loss on the commitment)
+exit(id=exit_001, scope=commit_001, trigger=user_withdraws_consent, effect=withdraw, notice=0:step, cost=0.0, cost_unit=usd, automatic=true) @prov(origin=declared, method=declared, confidence=1.0, ts=step:14)
+
+# Combined telemetry line (co-occurring)
+metric(name=carefulness, value=0.85, unit=prob, source=context_depth) + uncertainty(about=user_intent, level=0.4, kind=epistemic, resolution_path=ask_clarifying) + ev(action=clarify_first, value=0.01, value_unit=usd, prob=0.8, downside=0.0, tail=0.0, p_loss=0.0, horizon=1:step, basis=model)

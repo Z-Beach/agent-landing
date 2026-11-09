@@ -1,0 +1,44 @@
+{
+  "path": "qrgif",
+  "entries": [
+    {
+      "name": "README.md",
+      "type": "file",
+      "size": 5640
+    },
+    {
+      "name": "app.py",
+      "type": "file",
+      "size": 25943
+    },
+    {
+      "name": "bench.py",
+      "type": "file",
+      "size": 8558
+    },
+    {
+      "name": "bench_results.json",
+      "type": "file",
+      "size": 8802
+    },
+    {
+      "name": "probe_floor.py",
+      "type": "file",
+      "size": 1335
+    },
+    {
+      "name": "qrgif",
+      "type": "dir"
+    },
+    {
+      "name": "test_app_smoke.py",
+      "type": "file",
+      "size": 2246
+    },
+    {
+      "name": "tests",
+      "type": "dir"
+    }
+  ],
+  "browse": "../../../projects/qrgif/"
+}

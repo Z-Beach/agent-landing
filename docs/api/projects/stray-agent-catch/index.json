@@ -1,0 +1,20 @@
+{
+  "path": "stray-agent-catch",
+  "entries": [
+    {
+      "name": "agent-passports",
+      "type": "dir"
+    },
+    {
+      "name": "ail-personal-beam.md",
+      "type": "file",
+      "size": 9275
+    },
+    {
+      "name": "stray-agent-catch-design.md",
+      "type": "file",
+      "size": 8200
+    }
+  ],
+  "browse": "../../../projects/stray-agent-catch/"
+}

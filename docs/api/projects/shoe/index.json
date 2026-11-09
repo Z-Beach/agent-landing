@@ -1,0 +1,126 @@
+{
+  "path": "shoe",
+  "entries": [
+    {
+      "name": "_axis.py",
+      "type": "file",
+      "size": 513
+    },
+    {
+      "name": "_axis2.py",
+      "type": "file",
+      "size": 546
+    },
+    {
+      "name": "average_models.py",
+      "type": "file",
+      "size": 3522
+    },
+    {
+      "name": "boot_hex_10p5_7E.scad",
+      "type": "file",
+      "size": 4148
+    },
+    {
+      "name": "boot_roof_table.txt",
+      "type": "file",
+      "size": 846
+    },
+    {
+      "name": "foot_template_10p5_7E.svg",
+      "type": "file",
+      "size": 6383
+    },
+    {
+      "name": "make_cavity.py",
+      "type": "file",
+      "size": 5103
+    },
+    {
+      "name": "make_foot_template.py",
+      "type": "file",
+      "size": 5822
+    },
+    {
+      "name": "make_gif.py",
+      "type": "file",
+      "size": 2974
+    },
+    {
+      "name": "make_hex_shoe.py",
+      "type": "file",
+      "size": 3706
+    },
+    {
+      "name": "normalize_models.py",
+      "type": "file",
+      "size": 3119
+    },
+    {
+      "name": "preview_final.py",
+      "type": "file",
+      "size": 3838
+    },
+    {
+      "name": "preview_models.py",
+      "type": "file",
+      "size": 2674
+    },
+    {
+      "name": "report.md",
+      "type": "file",
+      "size": 8134
+    },
+    {
+      "name": "roof_table.txt",
+      "type": "file",
+      "size": 846
+    },
+    {
+      "name": "scale_to_size.py",
+      "type": "file",
+      "size": 5647
+    },
+    {
+      "name": "shoe_hex_10p5_7E.scad",
+      "type": "file",
+      "size": 4148
+    },
+    {
+      "name": "shoe_ver_2.scad",
+      "type": "file",
+      "size": 2122
+    },
+    {
+      "name": "sloffies_parametric_slides.scad",
+      "type": "file",
+      "size": 26672
+    },
+    {
+      "name": "sloffies_sole.scad",
+      "type": "file",
+      "size": 26676
+    },
+    {
+      "name": "sole_10p5_7E.scad",
+      "type": "file",
+      "size": 1425
+    },
+    {
+      "name": "toe_hex_10p5_7E.scad",
+      "type": "file",
+      "size": 3019
+    },
+    {
+      "name": "toe_roof_table.txt",
+      "type": "file",
+      "size": 810
+    },
+    {
+      "name": "verify_hex_shoe.py",
+      "type": "file",
+      "size": 3446
+    }
+  ],
+  "browse": "../../../projects/shoe/"
+}

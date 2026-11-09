@@ -1,0 +1,59 @@
+(* AIL v0.2 — EBNF grammar *)
+(* Machine-readable companion to ail-v0.2-design.md section 7 *)
+(* Notation: ISO/IEC 14977 EBNF. Terminals in double quotes. *)
+
+program      = { statement } ;
+statement    = definition | expression ;
+
+definition   = atom_def | derived_def | type_def ;
+atom_def     = "atom" , IDENT , "{" , field_list , "}" ;
+field_list   = field , { "," , field } ;
+field        = IDENT , ":" , type_expr , [ "=" , default ] ;
+derived_def  = "def" , IDENT , "(" , [ param_list ] , ")" , ":=" , expression ;
+param_list   = IDENT , { "," , IDENT } ;
+type_def     = "type" , IDENT , [ "<" , IDENT , { "," , IDENT } , ">" ] , "=" , type_expr ;
+
+type_expr    = base_type
+             | IDENT , [ "<" , type_expr , { "," , type_expr } , ">" ]
+             | "Maybe" , "<" , type_expr , ">"
+             | "List" , "<" , type_expr , ">"
+             | type_expr , "->" , type_expr
+             | "(" , type_expr , ")" ;
+base_type    = "Prob" | "Ident" | "Time" | "Self" | "Bool" | "Int" | "Real" | "State" | "Any" ;
+
+expression   = quant_expr ;
+quant_expr   = ( "forall" | "exists" ) , IDENT , [ ":" , IDENT ] , "." , quant_expr
+             | until_expr ;
+until_expr   = release_expr , { ( "U" | "S" ) , release_expr } ;   (* left-assoc *)
+release_expr = implies_expr , { ( "R" | "W" ) , implies_expr } ;
+implies_expr = tension_expr , { ( ">>" | "<<" ) , tension_expr } ;
+tension_expr = add_expr , { "<>" , add_expr } ;
+add_expr     = unary , { "+" , unary } ;
+unary        = prefix_op , unary
+             | temporal_op , unary
+             | atom_expr
+             | fix_expr
+             | let_expr ;
+prefix_op    = "~" | "?" | "!" ;
+temporal_op  = "G" | "F" | "X" | "P" | "H" | "O" ;
+fix_expr     = ( "fix" | "cofix" ) , IDENT , "=" , expression , "in" , expression ;
+let_expr     = "let" , IDENT , "=" , expression , "in" , expression ;
+atom_expr    = IDENT , "(" , [ field_assigns ] , ")"
+             | IDENT
+             | "self"
+             | NUMBER
+             | STRING
+             | list
+             | "(" , expression , ")" ;
+field_assigns= field_assign , { "," , field_assign } ;
+field_assign = IDENT , "=" , value ;
+value        = expression | list ;
+list         = "[" , [ value , { "," , value } ] , "]" ;
+
+(* Lexical rules (informative, not EBNF terminals): *)
+(* IDENT   = [A-Za-z_][A-Za-z0-9_]* ; reserved: self fix cofix let atom def type forall exists *)
+(* NUMBER  = [0-9]+ ( "." [0-9]+ )? *)
+(* STRING  = "\"" [^"]* "\"" | "'" [^']* "'" *)
+(* COMMENT = "#" [^\n]* *)
+(* operators matched longest-first: ">>" before ">", "<<" before "<", "<>" single token *)
+(* whitespace and comments are skipped *)

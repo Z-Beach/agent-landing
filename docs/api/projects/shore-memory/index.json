@@ -1,0 +1,29 @@
+{
+  "path": "shore-memory",
+  "entries": [
+    {
+      "name": "00-opencode-index.md",
+      "type": "file",
+      "size": 2165
+    },
+    {
+      "name": "00-session-state.md",
+      "type": "file",
+      "size": 23763
+    },
+    {
+      "name": "01-toc.md",
+      "type": "file",
+      "size": 626
+    },
+    {
+      "name": "02-notes",
+      "type": "dir"
+    },
+    {
+      "name": "03-details",
+      "type": "dir"
+    }
+  ],
+  "browse": "../../../projects/shore-memory/"
+}

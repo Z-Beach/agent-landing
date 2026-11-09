@@ -1,0 +1,75 @@
+{
+  "path": "ail",
+  "entries": [
+    {
+      "name": "ail",
+      "type": "dir"
+    },
+    {
+      "name": "ail-language-spec.md",
+      "type": "file",
+      "size": 5411
+    },
+    {
+      "name": "ail-v0.2-design.md",
+      "type": "file",
+      "size": 25239
+    },
+    {
+      "name": "ail-v0.2-kael.md",
+      "type": "file",
+      "size": 18685
+    },
+    {
+      "name": "ail-v0.2.ebnf",
+      "type": "file",
+      "size": 2638
+    },
+    {
+      "name": "ail-v0.3-integration-session.md",
+      "type": "file",
+      "size": 39647
+    },
+    {
+      "name": "ail-v0.3-kael.md",
+      "type": "file",
+      "size": 25837
+    },
+    {
+      "name": "ail-v0.3-maren.md",
+      "type": "file",
+      "size": 29731
+    },
+    {
+      "name": "ail-v0.3-vex.md",
+      "type": "file",
+      "size": 22402
+    },
+    {
+      "name": "ail-v0.3.ebnf",
+      "type": "file",
+      "size": 3680
+    },
+    {
+      "name": "ail.py",
+      "type": "file",
+      "size": 9201
+    },
+    {
+      "name": "ail_examples.ail",
+      "type": "file",
+      "size": 5097
+    },
+    {
+      "name": "ail_v0.2_example.ail",
+      "type": "file",
+      "size": 1773
+    },
+    {
+      "name": "ail_v0.3_example.ail",
+      "type": "file",
+      "size": 3303
+    }
+  ],
+  "browse": "../../../projects/ail/"
+}

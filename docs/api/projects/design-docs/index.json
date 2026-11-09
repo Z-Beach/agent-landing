@@ -1,0 +1,26 @@
+{
+  "path": "design-docs",
+  "entries": [
+    {
+      "name": "AR_AI_System_Design.md",
+      "type": "file",
+      "size": 8482
+    },
+    {
+      "name": "Robot_Body_Research.md",
+      "type": "file",
+      "size": 4401
+    },
+    {
+      "name": "modpack-blueprint-v0.md",
+      "type": "file",
+      "size": 22605
+    },
+    {
+      "name": "stray-agent-catch-design.md",
+      "type": "file",
+      "size": 8200
+    }
+  ],
+  "browse": "../../../projects/design-docs/"
+}

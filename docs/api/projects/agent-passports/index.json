@@ -1,0 +1,27 @@
+{
+  "path": "agent-passports",
+  "entries": [
+    {
+      "name": "README.md",
+      "type": "file",
+      "size": 2357
+    },
+    {
+      "name": "beam",
+      "type": "dir"
+    },
+    {
+      "name": "kael",
+      "type": "dir"
+    },
+    {
+      "name": "maren",
+      "type": "dir"
+    },
+    {
+      "name": "vex",
+      "type": "dir"
+    }
+  ],
+  "browse": "../../../projects/agent-passports/"
+}
