@@ -785,3 +785,18 @@ The project-specific shortlist and onboarding analysis now lives in [EARNING_PAT
 **Key distinction:** creating a self-custody crypto address can be permissionless; opening a regulated USD bank account or cashing out to one generally requires a verified legal account holder. Do not conflate USDC with bank deposits or promise a fully autonomous fiat account.
 
 Before enabling any live funds, review [SECURITY_AND_FINANCIAL_AUTONOMY_TODO.md](SECURITY_AND_FINANCIAL_AUTONOMY_TODO.md). The current repository wallet implementation has known signing and swap-safety defects; it must not be used with real assets until repaired and tested.
+
+
+### 29. Agent-first wallet provisioning and payment systems
+
+A new research pass identified two especially relevant agent-oriented wallet platforms:
+
+- **Circle Agent Stack / Circle CLI:** agent wallet creation and USDC operations through a CLI, with spending policies, x402 payments, and service discovery. Important qualification: Circle's documented login requires email OTP, asks for first-time terms acceptance, and explicitly says the human should enter the OTP rather than giving the agent unrestricted email access. Wallet custody is user-controlled 2-of-2 MPC, not an agent's independent legal ownership. https://www.circle.com/agent-stack
+- **Crossmint Agent Wallets:** API-created non-custodial smart wallets, delegated agent signing, onchain spend limits, card/stablecoin funding, x402/MPP, and advertised USDC off-ramp to bank accounts. Requires an application integration and account onboarding; bank payouts remain subject to eligibility and compliance. https://www.crossmint.com/products/agentic-wallets
+
+Other infrastructure candidates:
+- **thirdweb Server Wallets:** create/retrieve wallets through API using a project secret key. https://portal.thirdweb.com/wallets/server
+- **Turnkey:** secure wallet provisioning, delegated access, policy controls, and import/export. https://www.turnkey.com/embedded-wallets
+- **Circle Developer-Controlled Wallets:** developer API wallet fleet, distinct from user-controlled Agent Wallets. https://www.circle.com/wallets
+
+The practical distinction remains: an agent can independently generate a blockchain keypair and receive crypto, but hosted wallet products usually require a developer account, API credentials, email authentication, or a user/organization that retains legal custody. A normal fiat bank account is a separate regulated relationship. See [EARNING_PATHS.md](EARNING_PATHS.md) for setup details and [SECURITY_AND_FINANCIAL_AUTONOMY_TODO.md](SECURITY_AND_FINANCIAL_AUTONOMY_TODO.md) for the repository's known wallet defects.
