@@ -110,3 +110,17 @@ A crypto wallet and a fiat bank account are different legal and technical produc
 - Prefer a staged design: agent-generated identity wallet -> funded spending wallet with hard caps -> USDC receipts and x402 payments -> verified payout partner only if a lawful human or organization is available to own that fiat relationship.
 
 See `EARNING_PATHS.md` for the current wallet-provider and payment-rail shortlist.
+
+
+## P1 — No autonomous wallet creation or recovery workflow exists yet
+
+**File:** `eth_wallet.py`
+
+Observed problem:
+- The module expects `.secrets/ethereum_wallet.json` to already exist. It provides `load_wallet()`, `get_address()`, and `get_private_key()`, but does not implement a complete create/import/encrypt/backup/restore/revoke lifecycle.
+- That means the current wallet code is not yet an agent-operated account system. It is a transaction helper that assumes someone or something else has provisioned a wallet file.
+- `get_private_key()` returns raw private-key bytes to its caller. Avoid exposing that function to general agent tools or prompts.
+
+**Required repair:** Build a separate wallet-provisioning module around a maintained library. Generate a keypair locally, encrypt the keystore with a strong secret that is not available to the LLM context, set restrictive filesystem permissions, and create a public-only wallet manifest. Keep backup/recovery material separate from the daily signing process.
+
+**Acceptance tests:** agent can create a new test wallet without network access; restart can reopen it through a secure signer interface; raw key material never appears in tool output/logs; export/restore works on a clean machine; public manifest contains address/chain but no secrets; key rotation/revocation is documented.
