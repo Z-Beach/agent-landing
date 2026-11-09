@@ -1,0 +1,7 @@
+﻿layer_log.json
+memory_log.json
+search_history.json
+watchdog_state.json
+.secrets/
+__pycache__/
+*.pyc
