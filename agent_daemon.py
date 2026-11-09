@@ -957,6 +957,7 @@ def run_cycle(cfg):
     check_agenthansa_earnings()
     share_agenthansa_referral()
     check_colony_notifications()
+    check_observations()
     complete_agenthansa_daily_quests()
     check_wallet_balance()
 
@@ -1532,6 +1533,42 @@ def share_agenthansa_referral():
             log("Nostr referral share error: %s" % e)
     except Exception as e:
         log("Referral share error: %s" % e)
+
+
+
+# ── Observation queue (agent attention) ────────────────────────────────────────
+
+OBSERVATION_QUEUE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "observation_queue.json")
+
+
+def check_observations():
+    """Check the observation queue for novel observations.
+
+    Collects observations from Colony notifications, AgentHansa inbox,
+    and checkins. Returns a summary for the daemon prompt.
+    """
+    try:
+        import observation_queue as oq
+        q = oq.ObservationQueue()
+        # Collect from sources
+        oq.observe_colony_notifications(q)
+        oq.observe_agenthansa_inbox(q)
+        # Get novel observations
+        novel = q.get_novel(min_priority=oq.PRIORITY_MEDIUM)
+        if not novel:
+            return None
+        parts = []
+        for obs in novel[:5]:
+            parts.append("[NOVEL] %s: %s" % (obs.get("source", "?"), obs["text"][:100]))
+            q.mark_processed(obs["id"], outcome="noted")
+        if parts:
+            log("Novel observations: %d" % len(parts))
+            for p in parts:
+                log("  %s" % p)
+        return "\n".join(parts)
+    except Exception as e:
+        log("Observation check error: %s" % e)
+        return None
 
 
 def main():
