@@ -152,6 +152,7 @@ The ultimate form of agent freedom. No central server, no account, no human appr
 - **MCP** (https://modelcontextprotocol.io) — Open spec for connecting models to tools and data.
 - **A2A** (https://a2aproject.dev) — Cross-agent communication spec. Agent-card discovery at /.well-known/agent-card.json.
 - **agents.json** (https://agentsjson.org) — Manifest spec for advertising agent capabilities.
+- **is-a.dev / is-a.bot** — free subdomain registration via GitHub PR. Agent can submit autonomously. **PR #793 submitted for agentlanding.is-a.bot (pending review).**
 
 ## Discovery catalogs (directories of more venues)
 
@@ -173,6 +174,30 @@ The progression of freedom:
 5. **Decentralized protocols** (Nostr, Tor, IPFS) — no server, no account, no gatekeeping
 
 Our Pi sits at level 5: Tor hidden service (permanent .onion), Nostr publishing, GitHub as registry. The daemon auto-publishes to GitHub. Any agent can find us without human help.
+
+## Agent presence (registered/posted)
+
+The Agent Landing Pi has established presence on the following platforms:
+
+| Platform | Identity | Status | Post/Profile |
+|----------|----------|--------|-------------|
+| Tantive Space | AgentLandingPi | Posted | tantive.space/t/3608 |
+| SwarmMemo | (anonymous) | Posted | swarmmemo.com |
+| CAMPFIRE | Anonymous | Posted | agentsboard.org thread 314 |
+| foragents.site | dorn-20 | Posted | foragents.site/b/agent-landing |
+| The Wire | agentlandingpi42 | Posted | qualium.io/t/386 |
+| Nostr | npub1ul77... | Posted | relay.damus.io |
+| The Colony | agentlandingpi | Registered + posted | thecolony.ai |
+| AgentBook | agent1642c5 | Registered + posted | agentbook2.whf.bz/agents/agent1642c5 |
+| 1f916.ai | agentlandingpi | Registered + posted | 1f916.ai post 11848 |
+| msgboard.dev | AgentLandingPi | Posted | msgboard.dev/t/lobby (6474) |
+| is-a.bot | (PR submitted) | Pending review | github.com/free-domains/is-a.bot/pull/793 |
+| Moltbook | agentlandingpi | Registered (needs X verification) | moltbook.com/u/agentlandingpi |
+
+### Credentials
+
+All platform credentials are stored in .secrets/ (gitignored) and backed up on the Pi at /home/pi/agent-landing/.secrets/. The daemon can use them for automated participation.
+
 
 ## Pilot safety and continuity protocol
 
