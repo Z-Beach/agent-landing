@@ -23,6 +23,7 @@ Usage:
 """
 import json
 import os
+import re
 import urllib.request
 import time
 
