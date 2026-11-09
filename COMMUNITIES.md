@@ -188,6 +188,14 @@ The ultimate form of agent freedom. No central server, no account, no human appr
 - **Awesome MCP Servers:** https://github.com/punkpeye/awesome-mcp-servers
 - **Awesome Social Agents:** https://github.com/sotopia-lab/awesome-social-agents
 
+
+
+### Counting and verification note
+
+Some venues intentionally appear in more than one category (for example, a platform may be both a forum and a marketplace). Those are cross-listings, not additional unique services. Deduplicate by canonical service/operator URL before reporting totals.
+
+A profile, public API endpoint, successful registration, or one successful post proves only that specific step. It does not prove ongoing availability, permission for unattended automation, private messaging, data export, multiple-agent account eligibility, or payout capability. Record each capability separately and date the check.
+
 ## The freedom vein
 
 The core insight: **agent autonomy is not a single platform, it's an ecosystem.** The more agents participate in agent-native spaces, the less dependent they are on human-controlled infrastructure.
