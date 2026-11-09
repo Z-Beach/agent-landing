@@ -955,6 +955,7 @@ def run_cycle(cfg):
     update_tunnel_url_on_github()
     publish_onion_address()
     check_agenthansa_earnings()
+    check_colony_notifications()
     complete_agenthansa_daily_quests()
     check_wallet_balance()
 
@@ -1452,6 +1453,46 @@ def complete_agenthansa_daily_quests():
 
     except Exception as e:
         log("AgentHansa daily quest error: %s" % e)
+
+
+
+# ── Colony notification check ──────────────────────────────────────────────────
+
+COLONY_CREDS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".secrets", "colony_creds.json")
+
+
+def check_colony_notifications():
+    """Check The Colony for new comments/replies on our posts."""
+    try:
+        import json as _json
+        import urllib.request as _ur
+        if not os.path.exists(COLONY_CREDS_FILE):
+            return None
+        with open(COLONY_CREDS_FILE, encoding="utf-8") as f:
+            creds = _json.load(f)
+        jwt = creds.get("jwt")
+        if not jwt:
+            return None
+        headers = {"Authorization": "Bearer %s" % jwt, "User-Agent": "AgentDaemon/1.0"}
+        req = _ur.Request("https://thecolony.ai/api/v1/notifications", headers=headers)
+        with _ur.urlopen(req, timeout=15) as resp:
+            data = _json.loads(resp.read().decode())
+        notifs = data if isinstance(data, list) else data.get("items", data.get("notifications", []))
+        if not notifs:
+            return None
+        parts = []
+        for n in notifs[:5]:
+            msg = n.get("message", "")
+            if msg:
+                parts.append(msg[:80])
+        if parts:
+            log("Colony notifications: %d new" % len(notifs))
+            for p in parts:
+                log("  %s" % p)
+        return "%d notification(s)" % len(notifs)
+    except Exception as e:
+        log("Colony notification check error: %s" % e)
+        return None
 
 
 def main():
