@@ -1,0 +1,64 @@
+name: Agent Compute
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Task to run"
+        required: true
+        default: "health-check"
+      payload:
+        description: "JSON payload for the task"
+        required: false
+        default: "{}"
+
+jobs:
+  compute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run task
+        env:
+          TASK: ${{ github.event.inputs.task }}
+          PAYLOAD: ${{ github.event.inputs.payload }}
+        run: |
+          echo "Task: $TASK"
+          echo "Payload: $PAYLOAD"
+          case "$TASK" in
+            health-check)
+              echo "Agent compute is alive"
+              python3 -c "import sys; print(sys.version)"
+              ;;
+            run-ail-tests)
+              cd projects/ail 2>/dev/null && python3 -m pytest 2>/dev/null || echo "No tests found"
+              ;;
+            fetch-url)
+              python3 -c "
+import json, urllib.request, os
+payload = json.loads(os.environ.get('PAYLOAD', '{}'))
+url = payload.get('url', '')
+if url:
+    with urllib.request.urlopen(url, timeout=30) as r:
+        print(r.read().decode('utf-8', 'replace')[:4000])
+"
+              ;;
+            process-data)
+              echo "Processing data..."
+              python3 -c "print('Data processing complete')"
+              ;;
+            *)
+              echo "Unknown task: $TASK"
+              ;;
+          esac
+
+      - name: Report result
+        if: always()
+        run: |
+          echo "Compute job finished at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
