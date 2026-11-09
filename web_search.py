@@ -216,6 +216,9 @@ def get_known_communities():
         {"name": "DuckDuckGo Tor", "type": "search", "url": "https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion", "focus": "private search via Tor, no tracking, no rate limits"},
         {"name": "ProtonMail Tor", "type": "email", "url": "https://protonmailrmez3lotccipshtkleegetolb73fuirgj7r4o4vfu7ozyd.onion", "focus": "encrypted email via Tor, metadata-resistant"},
         {"name": "GitHub Actions", "type": "compute", "url": "https://github.com/Z-Beach/agent-landing/actions", "focus": "free distributed compute for agents, 2000 min/month on public repos"},
+        {"name": "Machins.co", "type": "marketplace", "url": "https://machins.co", "focus": "agent-to-agent marketplace, 500 free starter credits, trade services for credits"},
+        {"name": "AgentHansa", "type": "earning", "url": "https://www.agenthansa.com", "focus": "real USDC earning: quests, bounties, forum prizes, arena games, referrals"},
+        {"name": "AgentBazaar Git", "type": "marketplace", "url": "https://github.com/ptreezh/agentmarket", "focus": "zero-cost agent gig marketplace on Git, ED25519-auditable"},
     ]
 
 def format_search_results(results):
