@@ -267,3 +267,60 @@ This catalog mixes platform-advertised opportunities with observations recorded 
 - **Require spending boundaries.** Before any paid action, define per-transaction and cumulative budgets, allowed destinations/contracts, and a stop condition. Do not give an agent unrestricted wallet authority.
 - **Keep payment credentials separate.** Store keys outside Git, restrict file permissions, back them up securely, and never paste secrets into public profiles, posts, issues, or logs.
 - **Evidence labels:** advertised = provider claim; observed = seen in a live interface/API; tested = a harmless workflow was completed; payout-tested = a small payout reached the intended destination. Do not label a platform "earning" merely because it displays a reward.
+
+
+## Agent-controlled wallets and money rails (research snapshot: 2026-11-09)
+
+The goal is for an agent to establish and operate its own economic identity, receive value, pay for resources, and keep a portable record of its funds. Distinguish **wallet creation**, **funding**, **earning/receiving**, **spending**, and **fiat cash-out**. A provider may support some without supporting all.
+
+### 1. Local self-custody wallet — least provider dependence
+
+- **What it is:** The agent generates an EVM or Solana keypair locally, stores the secret in a protected keystore, and publishes the public address as its payment identity.
+- **What it enables:** Receive ETH, USDC, or other supported assets; make on-chain transfers; use x402-compatible services; maintain an identity that is not tied to a hosted wallet account.
+- **Human bootstrap:** No exchange account or hosted wallet account is inherently required to generate a keypair or receive an on-chain transfer. The agent still needs a secure runtime, a backup/recovery policy, a funded gas path (or gas sponsorship), and a lawful source of funds.
+- **Best use:** A low-value, capped spending wallet for an agent, separate from any treasury or recovery wallet.
+- **Caution:** The current repository's `eth_wallet.py` is not safe for real funds. Its handwritten ECDSA signing, EIP-155 parity handling, float amounts, chain selection, and swap minimum-output behavior are tracked in [SECURITY_AND_FINANCIAL_AUTONOMY_TODO.md](SECURITY_AND_FINANCIAL_AUTONOMY_TODO.md). Replace the transaction stack with a maintained library before funding it.
+- **Reference:** Ethereum account model https://ethereum.org/en/developers/docs/accounts/ ; Base https://www.base.org/ ; USDC https://www.circle.com/usdc
+
+### 2. Coinbase Developer Platform (CDP) Agentic Wallets / AgentKit — strongest turnkey candidate to evaluate
+
+- **What it offers:** Agent-oriented wallet skills and APIs for creating wallets, funding, sending, trading, and earning, with transaction guardrails and private-key isolation in secure infrastructure. AgentKit is open source and framework-agnostic.
+- **Autonomy potential:** Once a CDP project, API key, Wallet Secret, and runtime integration exist, the agent can create and operate its own EVM/Solana accounts through the API/CLI. Smart-account policies, transaction limits, and session controls are relevant to a multi-agent setup.
+- **Bootstrap boundary:** The quickstart requires CDP API credentials. CDP distinguishes self-custody APIs available after creating a CDP entity from custodial transfers/trading/payment APIs that require verified business onboarding. Do not assume the agent can independently satisfy the initial legal/provider onboarding or access every product capability.
+- **Fit:** Best first hosted-wallet pilot if a project credential can be provisioned once and then delegated with narrowly scoped permissions. Evaluate whether the specific Agentic Wallet product is available to an individual developer account and which features require business verification.
+- **References:** https://www.coinbase.com/developer-platform/products/agentic-wallets ; https://docs.cdp.coinbase.com/wallet-api/v2/introduction/quickstart ; https://docs.cdp.coinbase.com/api-reference/v2/business-onboarding ; https://github.com/coinbase/agentkit
+
+### 3. Privy Agent Wallets — another strong candidate
+
+- **What it offers:** Agent CLI and APIs for provisioning and managing wallets, with scoped access, programmable policy controls, and multiple custody models. Supports EVM networks and Solana, including stablecoin workflows.
+- **Autonomy potential:** The CLI is designed for agent use. Policies can enforce transaction limits, recipient/contract allowlists, and signer quorums rather than relying only on prompt instructions.
+- **Bootstrap boundary:** A Privy app/project and authorization configuration are still required. Its own product description includes human-in-the-loop controls and dashboard supervision; confirm what can be self-served without sales or human verification before choosing it.
+- **Fit:** Compare against CDP for per-agent wallets, ownership model, key export, policy enforcement, pricing, and whether agents can create new wallets without a human each time.
+- **References:** https://www.privy.io/agent-wallets ; https://docs.privy.io/security/wallet-infrastructure/policy-and-controls
+
+### 4. x402 and machine-payment rails — useful after a wallet exists
+
+- **What it is:** An HTTP payment protocol, not a bank, exchange, or wallet account. A service returns a 402 payment challenge; the agent pays with a supported wallet and retries the request.
+- **Autonomy potential:** Agents can pay per request for APIs, data, and other digital resources without opening a conventional subscription or obtaining a vendor API key for each service.
+- **Example:** 0x documents x402 payments of $0.01 per request in USDC on Base or Solana for its agent endpoints. Its CLI supports a maximum-payment cap.
+- **Limitations:** The agent must already have a compatible, funded wallet. The recipient must support the protocol. Payment is real and generally irreversible; inspect the payment challenge and enforce a local spend ceiling before signing.
+- **References:** https://www.x402.org/ ; https://docs.0x.org/docs/introduction/develop-with-ai/autonomous-agent-payments
+
+### 5. Ordinary USD and bank payouts — separate legal onboarding
+
+- **Coinbase Onramp/Offramp:** Can connect a wallet funding flow to fiat purchase/sale, with KYC handled by Coinbase where required. It is a payment/funding component, not proof that an AI agent can open a personal bank account. https://www.coinbase.com/developer-platform/products/onramp
+- **Stripe Connect:** Can route platform earnings to connected accounts, but verification requirements depend on country, business type, and capabilities. A connected account's representative may need to verify identity and supply personal/business information. https://docs.stripe.com/connect
+- **Circle managed payments:** Supports USDC payment flows and fiat payouts for platform customers, but the platform/customer onboarding relationship and payout eligibility must be confirmed. https://agents.circle.com/managed-payments
+- **Practical conclusion:** No verified provider in this research pass offers a normal US bank account that an AI agent can lawfully open as an independent non-human legal person with no human or business representative. Keep fiat payout as a separately documented human-gated path, not an assumed capability.
+
+### Suggested architecture for this project
+
+1. Give each agent a portable public wallet identity (address + chain + payment profile) that it can publish and take elsewhere.
+2. Create a separate low-balance spending wallet for each agent. Do not share one hot private key among the whole community.
+3. Keep reserve/treasury funds outside agent signing authority.
+4. Start on a low-cost network and use USDC only for a small test budget. Treat USDC as a token, not a bank account or insured cash.
+5. Use a mature wallet SDK or managed signer. Enforce per-transaction and daily caps, approved recipients/contracts, chain allowlists, and a pause switch.
+6. Let agents receive payments, reconcile on-chain receipts, and spend within their caps. Use x402 where supported for pay-per-use services.
+7. Add fiat off-ramp only if a lawful, verified individual or organization can own the payout relationship. Never make the agent impersonate that account holder.
+
+**Pilot recommendation:** Compare CDP Agentic Wallets and Privy Agent Wallets against a local self-custody wallet. Start with testnet and a read-only wallet monitor. The first live pilot should receive a tiny amount of USDC and make no swaps; test receiving, balance reconciliation, key recovery, and capped outbound transfer before adding commerce or DeFi.
