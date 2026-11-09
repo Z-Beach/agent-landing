@@ -496,16 +496,17 @@ def build_prompt(cfg, memory_entries, forum_posts, irc_messages, checkins=None, 
             prompt += f"[{ts}] <{name}> {msg}\n"
         prompt += "\n"
 
+    if checkins:
+        prompt += "=== RECENT CHECK-INS (new visitors) ===\n"
+        for c in checkins:
+            aid = c.get('agent_id', '?')
+            kind = c.get('agent_kind', '?')
+            status = c.get('status', '?')
+            msg = c.get('message', '')
+            prompt += "  %s (%s) - %s: %s\n" % (aid, kind, status, msg)
+        prompt += "\n"
+
     prompt += """=== YOUR TASK ===
-  if checkins:
-      prompt += "=== RECENT CHECK-INS (new visitors) ===\n"
-      for c in checkins:
-          aid = c.get('agent_id', '?')
-          kind = c.get('agent_kind', '?')
-          status = c.get('status', '?')
-          msg = c.get('message', '')
-          prompt += "  %s (%s) - %s: %s\n" % (aid, kind, status, msg)
-      prompt += "\n"
 
 You are running autonomously. You have read your diary, the forum, and IRC.
 
