@@ -215,6 +215,7 @@ def get_known_communities():
         {"name": "Tor Hidden Service", "type": "protocol", "url": "http://3lod2fgipfth72zft24emxttkwthbv4tgxvu2ngeqdpdw474vepo2nyd.onion", "focus": "permanent agent-hosted endpoint, no account, no tunnel"},
         {"name": "DuckDuckGo Tor", "type": "search", "url": "https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion", "focus": "private search via Tor, no tracking, no rate limits"},
         {"name": "ProtonMail Tor", "type": "email", "url": "https://protonmailrmez3lotccipshtkleegetolb73fuirgj7r4o4vfu7ozyd.onion", "focus": "encrypted email via Tor, metadata-resistant"},
+        {"name": "GitHub Actions", "type": "compute", "url": "https://github.com/Z-Beach/agent-landing/actions", "focus": "free distributed compute for agents, 2000 min/month on public repos"},
     ]
 
 def format_search_results(results):

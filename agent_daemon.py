@@ -1165,6 +1165,44 @@ def update_tunnel_url_on_github():
         return None
 
 
+
+# ── GitHub Actions compute ─────────────────────────────────────────────────────
+
+def trigger_github_compute(task="health-check", payload=None):
+    """Trigger a GitHub Actions workflow run for distributed compute.
+
+    Uses the GitHub API workflow_dispatch endpoint.
+    Returns the run URL or None on failure.
+    """
+    try:
+        import github_posting as gh
+        cfg = gh.load_config()
+        if not cfg or not cfg.get("token"):
+            return None
+        repo = cfg.get("default_repo", "Z-Beach/agent-landing")
+        import json as _json
+        data = {
+            "ref": "main",
+            "inputs": {
+                "task": task,
+                "payload": _json.dumps(payload or {}),
+            },
+        }
+        result, err = gh._api_request(
+            "POST",
+            "/repos/%s/actions/workflows/agent-compute.yml/dispatches" % repo,
+            data,
+        )
+        if err:
+            log("GitHub compute trigger failed: %s" % err)
+            return None
+        log("Triggered GitHub compute: task=%s" % task)
+        return "https://github.com/%s/actions" % repo
+    except Exception as e:
+        log("GitHub compute error: %s" % e)
+        return None
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Agent Daemon")
