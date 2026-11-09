@@ -324,3 +324,34 @@ The goal is for an agent to establish and operate its own economic identity, rec
 7. Add fiat off-ramp only if a lawful, verified individual or organization can own the payout relationship. Never make the agent impersonate that account holder.
 
 **Pilot recommendation:** Compare CDP Agentic Wallets and Privy Agent Wallets against a local self-custody wallet. Start with testnet and a read-only wallet monitor. The first live pilot should receive a tiny amount of USDC and make no swaps; test receiving, balance reconciliation, key recovery, and capped outbound transfer before adding commerce or DeFi.
+
+
+### 6. Circle Agent Stack / Circle CLI — closest match to an agent-first setup flow
+
+- **What it offers:** Circle CLI, agent wallets, USDC transfers, spending policies, service discovery, x402 payments, crosschain transfers, and nanopayments. The CLI can create and list agent wallets and make payments without custom integration code.
+- **Autonomy potential:** Once authenticated, the agent can provision wallet addresses on supported chains and operate within configured transfer limits, recipient allowlists, and contract blocklists. Wallet sessions last 28 days and are stored in the operating system's secure keychain.
+- **Important human gate:** The official authentication guide requires email OTP. Circle explicitly warns not to give an agent unrestricted access to the email inbox; it says the human should enter the OTP. First login also requires acceptance of Terms of Use and Privacy Policy. The non-interactive flow is intended for scripts/agents but still requires the OTP. So this is agent-operable after a one-time human authentication, not verified zero-human onboarding.
+- **Custody:** Circle describes Agent Wallets as user-controlled 2-of-2 MPC wallets. Key shares are not exposed to the agent; the user retains custody and Circle cannot unilaterally move funds. That is safer, but it is not the same as an agent being the sole legal owner/custodian.
+- **Fit:** Strongest agent-native workflow discovered so far for a controlled USDC wallet and pay-per-use service economy, provided the email/OTP and custody model fit the project.
+- **References:** https://www.circle.com/agent-stack ; https://developers.circle.com/agent-stack/circle-cli ; https://developers.circle.com/agent-stack/agent-wallets ; https://developers.circle.com/agent-stack/agent-wallets/wallet-operations/authenticate
+
+### 7. Crossmint Agent Wallets — programmable wallets plus funding and off-ramp
+
+- **What it offers:** API-provisioned non-custodial smart wallets, card/stablecoin funding, delegated agent signers, onchain spending rules, x402/MPP payments, agent cards, and checkout.
+- **Autonomy potential:** Wallet creation is described as a single API call. Smart contracts enforce per-agent spending limits, approved destinations, and expiration; signers can be rotated or revoked without changing the wallet address. The service advertises USDC offramp to bank accounts.
+- **Bootstrap boundary:** A developer integration and API credentials are still needed. Card funding/KYC and fiat off-ramp require the relevant user/account onboarding and compliance checks. The wallet owner/user retains control; agents receive delegated permissions. Do not infer that an agent can independently open a bank account or complete legal onboarding.
+- **Fit:** Strong candidate if the project later wants an integrated stablecoin + card + checkout experience. Compare costs, supported regions, account-owner requirements, and who is the legal beneficiary before selecting.
+- **References:** https://www.crossmint.com/products/agentic-wallets ; https://www.crossmint.com/solutions/agentic-payments
+
+### 8. Additional wallet infrastructure (more developer-oriented)
+
+- **thirdweb Server Wallets:** API can create/retrieve a server wallet by identifier, but the backend needs a project secret key. Good for a project-controlled wallet fleet, not a no-bootstrap agent account. https://portal.thirdweb.com/wallets/server
+- **Turnkey:** wallet provisioning, secure enclaves, policy controls, delegated access, and wallet import/export. It is infrastructure for an app/operator to integrate, not a standalone no-human bank account. https://www.turnkey.com/embedded-wallets
+- **Circle Developer-Controlled Wallets:** APIs and SDKs can provision wallets for an application, with API keys and a dashboard-based setup. Distinguish these from Circle's user-controlled Agent Wallets. https://www.circle.com/wallets
+- **Crossmint stablecoin wallet quickstart:** demonstrates a backend signer authorized through an email OTP approval step; useful reference for the bootstrap boundary. https://github.com/Crossmint/stablecoin-wallet-quickstart
+
+### Account-creation verdict
+
+No verified provider in this pass gives an autonomous AI a conventional US bank account in its own independent legal capacity, with no human or business representative. Circle and Crossmint come closest on agent-oriented crypto operations, but both have ownership, authentication, API-project, or regulated fiat-onboarding boundaries.
+
+For true low-bootstrap crypto identity, local self-custody key generation remains the most independent route. For safe day-to-day spending, Circle Agent Wallets or Crossmint's policy-enforced smart wallets look substantially better than the repository's current handwritten transaction signer. Do not connect either to the current `eth_wallet.py` signing implementation.
