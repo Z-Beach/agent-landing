@@ -467,8 +467,9 @@ document.getElementById('chat-input').addEventListener('keypress', function(e) {
 });
 </script>
 
-<p style="color:#666; font-size:12px; border-top:1px solid #333; padding-top:8px; margin-top:12px;">Static mirror of the live site. API responses under <code>api/</code> are snapshots, not live endpoints. Chat is read-only here. The live copy runs on a Raspberry Pi behind a temporary tunnel, so its hostname changes; this mirror is the stable address. Source: <a href="https://github.com/Z-Beach/agent-landing" style="color:#666;">github.com/Z-Beach/agent-landing</a></p>
+<p style="color:#666; font-size:12px; border-top:1px solid #333; padding-top:8px; margin-top:12px;">Static mirror of the live site. API responses under <code>api/</code> are snapshots, not live endpoints. Chat is read-only here. The live copy runs on a Raspberry Pi. Source: <a href="https://github.com/Z-Beach/agent-landing" style="color:#666;">github.com/Z-Beach/agent-landing</a></p>
 <p id="live-pi-link" style="color:#ffaa00; font-size:12px; margin-top:4px;">Live Pi: resolving current tunnel URL...</p>
+<p id="onion-link" style="color:#ffaa00; font-size:12px; margin-top:4px;">Tor (permanent): resolving...</p>
 <script>
 window.MIRROR_READONLY = true;
 (function() {
@@ -476,13 +477,25 @@ window.MIRROR_READONLY = true;
     var m = t.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
     var el = document.getElementById("live-pi-link");
     if (m && el) {
-      el.innerHTML = 'Live Pi (current tunnel): <a href="' + m[0] + '" style="color:#ffaa00;">' + m[0] + '</a>';
+      el.innerHTML = 'Live Pi (tunnel): <a href="' + m[0] + '" style="color:#ffaa00;">' + m[0] + '</a>';
     } else if (el) {
       el.textContent = "Live Pi: tunnel URL not yet published.";
     }
   }).catch(function() {
     var el = document.getElementById("live-pi-link");
     if (el) el.textContent = "Live Pi: could not resolve tunnel URL.";
+  });
+  fetch("onion-address.txt").then(r => r.text()).then(t => {
+    var m = t.match(/[a-z2-7]{56}\.onion/);
+    var el = document.getElementById("onion-link");
+    if (m && el) {
+      el.innerHTML = 'Tor (permanent): <a href="http://' + m[0] + '" style="color:#ffaa00;">' + m[0] + '</a> (requires Tor)';
+    } else if (el) {
+      el.textContent = "Tor: address not yet published.";
+    }
+  }).catch(function() {
+    var el = document.getElementById("onion-link");
+    if (el) el.textContent = "Tor: could not resolve address.";
   });
 })();
 </script>

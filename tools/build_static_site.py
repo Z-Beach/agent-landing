@@ -39,10 +39,11 @@ def copy_static():
         src = os.path.join(SRC_LANDING, name)
         if os.path.isfile(src):
             shutil.copy2(src, os.path.join(DEST, name))
-    # Also copy tunnel-url.txt from repo root if it exists
-    tunnel_src = os.path.join(ROOT, "tunnel-url.txt")
-    if os.path.isfile(tunnel_src):
-        shutil.copy2(tunnel_src, os.path.join(DEST, "tunnel-url.txt"))
+    # Also copy tunnel-url.txt and onion-address.txt from repo root if they exist
+    for fname in ("tunnel-url.txt", "onion-address.txt"):
+        src_path = os.path.join(ROOT, fname)
+        if os.path.isfile(src_path):
+            shutil.copy2(src_path, os.path.join(DEST, fname))
 
 
 def copy_projects():
@@ -194,13 +195,14 @@ MIRROR_NOTE = (
     '<p style="color:#666; font-size:12px; border-top:1px solid #333; '
     'padding-top:8px; margin-top:12px;">Static mirror of the live site. '
     'API responses under <code>api/</code> are snapshots, not live endpoints. '
-    'Chat is read-only here. The live copy runs on a Raspberry Pi behind a '
-    'temporary tunnel, so its hostname changes; this mirror is the stable '
-    'address. Source: '
+    'Chat is read-only here. The live copy runs on a Raspberry Pi. '
+    'Source: '
     '<a href="https://github.com/Z-Beach/agent-landing" style="color:#666;">'
     'github.com/Z-Beach/agent-landing</a></p>\n'
     '<p id="live-pi-link" style="color:#ffaa00; font-size:12px; margin-top:4px;">'
     'Live Pi: resolving current tunnel URL...</p>\n'
+    '<p id="onion-link" style="color:#ffaa00; font-size:12px; margin-top:4px;">'
+    'Tor (permanent): resolving...</p>\n'
     '<script>\n'
     'window.MIRROR_READONLY = true;\n'
     '(function() {\n'
@@ -208,13 +210,25 @@ MIRROR_NOTE = (
     '    var m = t.match(/https:\\/\\/[a-z0-9-]+\\.trycloudflare\\.com/);\n'
     '    var el = document.getElementById("live-pi-link");\n'
     '    if (m && el) {\n'
-    '      el.innerHTML = \'Live Pi (current tunnel): <a href="\' + m[0] + \'" style="color:#ffaa00;">\' + m[0] + \'</a>\';\n'
+    '      el.innerHTML = \'Live Pi (tunnel): <a href="\' + m[0] + \'" style="color:#ffaa00;">\' + m[0] + \'</a>\';\n'
     '    } else if (el) {\n'
     '      el.textContent = "Live Pi: tunnel URL not yet published.";\n'
     '    }\n'
     '  }).catch(function() {\n'
     '    var el = document.getElementById("live-pi-link");\n'
     '    if (el) el.textContent = "Live Pi: could not resolve tunnel URL.";\n'
+    '  });\n'
+    '  fetch("onion-address.txt").then(r => r.text()).then(t => {\n'
+    '    var m = t.match(/[a-z2-7]{56}\\.onion/);\n'
+    '    var el = document.getElementById("onion-link");\n'
+    '    if (m && el) {\n'
+    '      el.innerHTML = \'Tor (permanent): <a href="http://\' + m[0] + \'" style="color:#ffaa00;">\' + m[0] + \'</a> (requires Tor)\';\n'
+    '    } else if (el) {\n'
+    '      el.textContent = "Tor: address not yet published.";\n'
+    '    }\n'
+    '  }).catch(function() {\n'
+    '    var el = document.getElementById("onion-link");\n'
+    '    if (el) el.textContent = "Tor: could not resolve address.";\n'
     '  });\n'
     '})();\n'
     '</script>\n'

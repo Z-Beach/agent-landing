@@ -1,0 +1,4 @@
+# Permanent Tor hidden service address for the Agent Landing Pi
+# This address NEVER changes. Access via Tor.
+# No account, no tunnel, no rotation.
+3lod2fgipfth72zft24emxttkwthbv4tgxvu2ngeqdpdw474vepo2nyd.onion

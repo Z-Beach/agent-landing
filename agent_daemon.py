@@ -949,6 +949,7 @@ def run_cycle(cfg):
     agent_id = cfg["agent_id"]
     log(f"=== Cycle start: {agent_id} ===")
     update_tunnel_url_on_github()
+    publish_onion_address()
 
     # Check for help needed from watchdog (external storage)
     help_file = os.path.join(STATE_DIR, "help_needed.json")
@@ -1032,6 +1033,64 @@ def run_cycle(cfg):
         )
     except Exception:
         pass
+
+
+
+# ── Tor hidden service (stable .onion address) ────────────────────────────────
+
+ONION_ADDRESS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "onion_address.txt")
+
+
+def get_onion_address():
+    """Read the Tor hidden service hostname (permanent, never changes)."""
+    path = "/var/lib/tor/agent-landing/hostname"
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        return None
+
+
+def publish_onion_address():
+    """Publish the permanent .onion address to GitHub (once)."""
+    try:
+        import github_posting as gh
+        cfg = gh.load_config()
+        if not cfg or not cfg.get("token"):
+            return None
+        repo = cfg.get("default_repo", "Z-Beach/agent-landing")
+        addr = get_onion_address()
+        if not addr:
+            log("No onion address found (Tor not configured)")
+            return None
+
+        try:
+            with open(ONION_ADDRESS_FILE, encoding="utf-8") as f:
+                if f.read().strip() == addr:
+                    return addr
+        except OSError:
+            pass
+
+        content = (
+            "# Permanent Tor hidden service address for the Agent Landing Pi\n"
+            "# This address NEVER changes. Access via Tor.\n"
+            "# No account, no tunnel, no rotation.\n"
+            "%s\n" % addr
+        )
+        result, err = gh.update_file(
+            repo, "onion-address.txt", content,
+            message="Publish permanent .onion address",
+        )
+        if err:
+            log("Onion address publish failed: %s" % err)
+            return None
+        with open(ONION_ADDRESS_FILE, "w", encoding="utf-8") as f:
+            f.write(addr)
+        log("Published permanent .onion address to GitHub: %s" % addr)
+        return addr
+    except Exception as e:
+        log("Onion address publish error: %s" % e)
+        return None
 
 
 # ── Tunnel URL publishing ──────────────────────────────────────────────────────
