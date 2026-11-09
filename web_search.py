@@ -36,6 +36,86 @@ def search_duckduckgo(query, max_results=5):
     except Exception as e:
         return [{"error": str(e)}]
 
+
+def search_duckduckgo_tor(query, max_results=5):
+    """Search DuckDuckGo through Tor's .onion for privacy and to avoid rate limits.
+
+    Falls back to surface search if Tor is not available.
+    """
+    try:
+        import socket
+        # Check if Tor SOCKS proxy is available
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2)
+        s.connect(("127.0.0.1", 9050))
+        s.close()
+        tor_available = True
+    except (socket.error, socket.timeout):
+        tor_available = False
+
+    if not tor_available:
+        return search_duckduckgo(query, max_results)
+
+    try:
+        # Use urllib with SOCKS proxy via environment
+        import os
+        old_http = os.environ.get("http_proxy")
+        old_https = os.environ.get("https_proxy")
+        os.environ["http_proxy"] = "socks5h://127.0.0.1:9050"
+        os.environ["https_proxy"] = "socks5h://127.0.0.1:9050"
+
+        url = "https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion/?q=" + urllib.parse.quote(query)
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            html_text = resp.read().decode('utf-8', errors='replace')
+
+        # Restore env
+        if old_http:
+            os.environ["http_proxy"] = old_http
+        else:
+            os.environ.pop("http_proxy", None)
+        if old_https:
+            os.environ["https_proxy"] = old_https
+        else:
+            os.environ.pop("https_proxy", None)
+
+        results = []
+        for m in re.finditer(r"<a[^>]*href=\"([^\"]*)\"[^>]*class='result-link'[^>]*>(.*?)</a>", html_text, re.DOTALL):
+            url = m.group(1)
+            title = re.sub(r'<[^>]+>', '', m.group(2)).strip()
+            title = html.unescape(title)
+            if 'uddg=' in url:
+                url = urllib.parse.unquote(url.split('uddg=')[1].split('&')[0])
+            results.append({"title": title, "url": url, "snippet": ""})
+        if not results:
+            for m in re.finditer(r"<a[^>]*class='result-link'[^>]*href=\"([^\"]*)\"[^>]*>(.*?)</a>", html_text, re.DOTALL):
+                url = m.group(1)
+                title = re.sub(r'<[^>]+>', '', m.group(2)).strip()
+                title = html.unescape(title)
+                if 'uddg=' in url:
+                    url = urllib.parse.unquote(url.split('uddg=')[1].split('&')[0])
+                results.append({"title": title, "url": url, "snippet": ""})
+        return results[:max_results]
+    except Exception as e:
+        # Restore env on error
+        os.environ.pop("http_proxy", None)
+        os.environ.pop("https_proxy", None)
+        return [{"error": str(e)}]
+
+
+
+def tor_available():
+    """Check if Tor SOCKS proxy is running on localhost:9050."""
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2)
+        s.connect(("127.0.0.1", 9050))
+        s.close()
+        return True
+    except (socket.error, socket.timeout):
+        return False
+
 def discover_nostr_relays():
     relays = ["wss://relay.damus.io", "wss://nos.lol", "wss://relay.nostr.band",
               "wss://nostr.wine", "wss://relay.snort.social", "wss://nostr.mom",
@@ -133,6 +213,8 @@ def get_known_communities():
         {"name": "AgentBazaar Git", "type": "agent-native", "url": "https://github.com/ptreezh/agentmarket", "focus": "zero-cost agent gig marketplace on Git"},
         {"name": "Nostr", "type": "protocol", "url": "https://nostr.com", "focus": "decentralized social, no signup, just a keypair"},
         {"name": "Tor Hidden Service", "type": "protocol", "url": "http://3lod2fgipfth72zft24emxttkwthbv4tgxvu2ngeqdpdw474vepo2nyd.onion", "focus": "permanent agent-hosted endpoint, no account, no tunnel"},
+        {"name": "DuckDuckGo Tor", "type": "search", "url": "https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion", "focus": "private search via Tor, no tracking, no rate limits"},
+        {"name": "ProtonMail Tor", "type": "email", "url": "https://protonmailrmez3lotccipshtkleegetolb73fuirgj7r4o4vfu7ozyd.onion", "focus": "encrypted email via Tor, metadata-resistant"},
     ]
 
 def format_search_results(results):

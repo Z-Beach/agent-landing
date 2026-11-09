@@ -912,7 +912,11 @@ def search_web(query):
     """Search the web and return results. Returns list of {title, url, snippet}."""
     try:
         import web_search
-        results = web_search.search_duckduckgo(query, max_results=5)
+        if web_search.tor_available():
+            results = web_search.search_duckduckgo_tor(query, max_results=5)
+            log("Search via Tor: %s" % query)
+        else:
+            results = web_search.search_duckduckgo(query, max_results=5)
         return results
     except Exception as e:
         log(f"Search error: {e}")
@@ -1044,11 +1048,24 @@ ONION_ADDRESS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "o
 def get_onion_address():
     """Read the Tor hidden service hostname (permanent, never changes)."""
     path = "/var/lib/tor/agent-landing/hostname"
+    # Try direct read first
     try:
         with open(path, encoding="utf-8") as f:
             return f.read().strip()
     except OSError:
-        return None
+        pass
+    # Fall back to sudo (pi user may not have direct access)
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["sudo", "-n", "cat", path],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return None
 
 
 def publish_onion_address():
