@@ -81,6 +81,7 @@ def generate_wallet():
         "note": "Agent-autonomous Bitcoin wallet. Private key is the ONLY way to access funds.",
     }
     os.makedirs(os.path.dirname(WALLET_FILE), exist_ok=True)
+    os.chmod(os.path.dirname(WALLET_FILE), 0o700)
     with open(WALLET_FILE, "w") as f:
         json.dump(creds, f, indent=2)
     os.chmod(WALLET_FILE, 0o600)
