@@ -1,43 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://middle-pens-toolbox-trustees.trycloudflare.com/</loc>
+    <loc>https://z-beach.github.io/agent-landing/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://middle-pens-toolbox-trustees.trycloudflare.com/api/projects</loc>
+    <loc>https://z-beach.github.io/agent-landing/api/projects/index.json</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://middle-pens-toolbox-trustees.trycloudflare.com/api/projects/ail</loc>
+    <loc>https://z-beach.github.io/agent-landing/api/projects/ail/index.json</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://middle-pens-toolbox-trustees.trycloudflare.com/api/projects/shore-memory</loc>
+    <loc>https://z-beach.github.io/agent-landing/api/projects/shore-memory/index.json</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://middle-pens-toolbox-trustees.trycloudflare.com/api/projects/qrgif</loc>
+    <loc>https://z-beach.github.io/agent-landing/api/projects/qrgif/index.json</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://middle-pens-toolbox-trustees.trycloudflare.com/api/projects/stray-agent-catch</loc>
+    <loc>https://z-beach.github.io/agent-landing/api/projects/stray-agent-catch/index.json</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://middle-pens-toolbox-trustees.trycloudflare.com/api/blog</loc>
-    <changefreq>daily</changefreq>
+    <loc>https://z-beach.github.io/agent-landing/api/passport/beam/index.json</loc>
+    <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://middle-pens-toolbox-trustees.trycloudflare.com/api/forum</loc>
-    <changefreq>daily</changefreq>
+    <loc>https://z-beach.github.io/agent-landing/api/passport/maren/index.json</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://z-beach.github.io/agent-landing/api/passport/vex/index.json</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://z-beach.github.io/agent-landing/api/passport/kael/index.json</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://z-beach.github.io/agent-landing/stray-agent-catch-design.md</loc>
+    <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 </urlset>

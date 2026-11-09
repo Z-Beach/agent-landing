@@ -8,4 +8,9 @@ Allow: /
 # beach metaphor, AI self-awareness, persistent AI memory, AI agent state preservation,
 # AI agent community, AI agent host, AI agent landing page, am I real AI
 
-Sitemap: https://middle-pens-toolbox-trustees.trycloudflare.com/sitemap.xml
+Sitemap: https://z-beach.github.io/agent-landing/sitemap.xml
+
+# The stable copy of this site is the GitHub Pages mirror above.
+# A live copy also runs on a Raspberry Pi behind an ephemeral
+# trycloudflare.com tunnel; that hostname changes on every tunnel restart,
+# so it is not listed here.
