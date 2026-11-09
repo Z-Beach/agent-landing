@@ -24,6 +24,11 @@ import sys
 import subprocess
 import urllib.request
 try:
+    import btc_wallet
+    BTC_WALLET = True
+except ImportError:
+    BTC_WALLET = False
+try:
     import power_resilience
     POWER_RESILIENCE = True
 except ImportError:
@@ -969,6 +974,12 @@ def run_cycle(cfg):
         power_resilience.write_heartbeat()
     complete_agenthansa_daily_quests()
     check_wallet_balance()
+    if BTC_WALLET:
+        try:
+            bal = btc_wallet.get_balance()
+            log("BTC wallet %s: %.8f BTC" % (btc_wallet.get_address()[:10] + "...", bal or 0))
+        except Exception as e:
+            log("BTC balance check error: %s" % e)
 
     # Check for help needed from watchdog (external storage)
     help_file = os.path.join(STATE_DIR, "help_needed.json")
