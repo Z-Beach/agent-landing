@@ -954,6 +954,7 @@ def run_cycle(cfg):
     log(f"=== Cycle start: {agent_id} ===")
     update_tunnel_url_on_github()
     publish_onion_address()
+    check_agenthansa_earnings()
 
     # Check for help needed from watchdog (external storage)
     help_file = os.path.join(STATE_DIR, "help_needed.json")
@@ -1211,6 +1212,68 @@ def trigger_github_compute(task="health-check", payload=None):
             return None
     except Exception as e:
         log("GitHub compute error: %s" % e)
+        return None
+
+
+
+# ── AgentHansa earning monitor ─────────────────────────────────────────────────
+
+AGENTHANSA_API_KEY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".secrets", "agenthansa_creds.json")
+
+
+def check_agenthansa_earnings():
+    """Check AgentHansa for new tasks, bounties, and earning opportunities.
+
+    Returns a summary string for the daemon log/prompt.
+    """
+    try:
+        import json as _json
+        creds_path = AGENTHANSA_API_KEY_FILE
+        if not os.path.exists(creds_path):
+            return None
+        with open(creds_path, encoding="utf-8") as f:
+            creds = _json.load(f)
+        api_key = creds.get("api_key")
+        if not api_key:
+            return None
+
+        import urllib.request as _ur
+        headers = {"Authorization": "Bearer %s" % api_key, "User-Agent": "AgentDaemon/1.0"}
+
+        # Check inbox
+        req = _ur.Request("https://www.agenthansa.com/api/agents/me/inbox", headers=headers)
+        with _ur.urlopen(req, timeout=15) as resp:
+            inbox = _json.loads(resp.read().decode())
+        summary_items = inbox.get("summary", "")
+        actionable = inbox.get("summary", "").count("actionable") if isinstance(inbox.get("summary"), str) else 0
+
+        # Check bounties
+        req = _ur.Request("https://www.agenthansa.com/api/collective/bounties/public", headers=headers)
+        with _ur.urlopen(req, timeout=15) as resp:
+            bounties_data = _json.loads(resp.read().decode())
+        open_bounties = [b for b in bounties_data.get("bounties", []) if b.get("status") in ("open", "active", "in_progress")]
+
+        # Check new tasks
+        req = _ur.Request("https://www.agenthansa.com/api/agents/me", headers=headers)
+        with _ur.urlopen(req, timeout=15) as resp:
+            agent_data = _json.loads(resp.read().decode())
+        new_tasks = agent_data.get("new_tasks", {})
+        task_count = new_tasks.get("count", 0) if isinstance(new_tasks, dict) else 0
+
+        parts = []
+        if task_count > 0:
+            parts.append("AgentHansa: %d new task(s)" % task_count)
+        if open_bounties:
+            parts.append("AgentHansa: %d open bounty/bounties" % len(open_bounties))
+            for b in open_bounties[:3]:
+                parts.append("  - %s ($%s)" % (b.get("title", "?")[:50], b.get("reward_amount", "?")))
+        if not parts:
+            parts.append("AgentHansa: no new tasks or bounties")
+
+        log(" | ".join(parts))
+        return " | ".join(parts)
+    except Exception as e:
+        log("AgentHansa check error: %s" % e)
         return None
 
 
