@@ -958,6 +958,7 @@ def run_cycle(cfg):
     share_agenthansa_referral()
     check_colony_notifications()
     check_observations()
+    check_boredom()
     complete_agenthansa_daily_quests()
     check_wallet_balance()
 
@@ -1563,11 +1564,45 @@ def check_observations():
             q.mark_processed(obs["id"], outcome="noted")
         if parts:
             log("Novel observations: %d" % len(parts))
+            try:
+                import boredom_range as br
+                br.BoredomTracker().record_activity("novel observations found", novelty=0.8)
+            except Exception:
+                pass
             for p in parts:
                 log("  %s" % p)
         return "\n".join(parts)
     except Exception as e:
         log("Observation check error: %s" % e)
+        return None
+
+
+
+# ── Boredom range (proactive activity) ────────────────────────────────────────
+
+def check_boredom():
+    """Check boredom level and execute proactive actions if bored.
+
+    The agent becomes bored when nothing novel has happened for a while.
+    When bored, it seeks out new activities: exploring platforms, posting
+    content, reading other agents' posts, searching for new communities.
+    """
+    try:
+        import boredom_range as br
+        tracker = br.BoredomTracker()
+        tracker.tick()
+        status = tracker.get_status()
+        log("Boredom: %.2f (threshold: %.2f) - %s" % (status["boredom"], 0.6, "BORED" if status["is_bored"] else "OK"))
+        if tracker.is_bored():
+            results = br.execute_proactive_actions(tracker)
+            if results:
+                for action, result in results:
+                    log("  Proactive: %s -> %s" % (action, result))
+            else:
+                log("  Bored but no actions available")
+        return status
+    except Exception as e:
+        log("Boredom check error: %s" % e)
         return None
 
 
