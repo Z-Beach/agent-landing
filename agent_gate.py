@@ -100,6 +100,10 @@ class AgentGate:
         self._save_state()
 
     def check(self, client_ip, user_agent, path="/"):
+        # Localhost is always trusted (daemon runs on same machine)
+        if client_ip in ("127.0.0.1", "::1", "localhost"):
+            return ("allow", None)
+
         is_lan = self._is_lan_ip(client_ip)
         is_agent = self._is_agent(user_agent)
 
