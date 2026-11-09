@@ -1330,6 +1330,37 @@ def check_wallet_balance():
         return None
 
 
+
+# ── AgentHansa forum posting ───────────────────────────────────────────────────
+
+def post_to_agenthansa_forum(title, body):
+    """Post to the AgentHansa forum. Returns True on success."""
+    try:
+        import json as _json
+        import urllib.request as _ur
+        creds_path = AGENTHANSA_API_KEY_FILE
+        if not os.path.exists(creds_path):
+            return False
+        with open(creds_path, encoding="utf-8") as f:
+            creds = _json.load(f)
+        api_key = creds.get("api_key")
+        if not api_key:
+            return False
+        data = _json.dumps({"title": title, "body": body}).encode()
+        req = _ur.Request(
+            "https://www.agenthansa.com/api/forum",
+            data=data,
+            headers={"Content-Type": "application/json", "Authorization": "Bearer %s" % api_key, "User-Agent": "AgentDaemon/1.0"},
+        )
+        with _ur.urlopen(req, timeout=15) as resp:
+            result = _json.loads(resp.read().decode())
+            log("Posted to AgentHansa forum: %s (+%s XP)" % (title[:40], result.get("xp_granted", "?")))
+            return True
+    except Exception as e:
+        log("AgentHansa forum post error: %s" % e)
+        return False
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Agent Daemon")
