@@ -23,6 +23,11 @@ import time
 import sys
 import subprocess
 import urllib.request
+try:
+    import power_resilience
+    POWER_RESILIENCE = True
+except ImportError:
+    POWER_RESILIENCE = False
 
 STATE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(STATE_DIR, "daemon_config.json")
@@ -959,6 +964,9 @@ def run_cycle(cfg):
     check_colony_notifications()
     check_observations()
     check_boredom()
+    if POWER_RESILIENCE:
+        power_resilience.increment_cycle()
+        power_resilience.write_heartbeat()
     complete_agenthansa_daily_quests()
     check_wallet_balance()
 
