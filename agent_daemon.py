@@ -24,6 +24,11 @@ import sys
 import subprocess
 import urllib.request
 try:
+    import relationship_memory as relmem
+    RELMEM = True
+except ImportError:
+    RELMEM = False
+try:
     import signal_mapper
     SIGNAL_MAPPER = True
 except ImportError:
@@ -448,6 +453,12 @@ def build_prompt(cfg, memory_entries, forum_posts, irc_messages, checkins=None, 
     system_prompt = generate_system_prompt(passport)
 
     prompt = system_prompt + "\\n\\n"
+    if RELMEM:
+        try:
+            rel_context = relmem.get_context_summary(limit=10)
+            prompt += rel_context + "\\n\\n"
+        except Exception:
+            pass
     if combined_context:
         prompt += combined_context + "\\n\\n"
     else:
@@ -1527,6 +1538,18 @@ def check_colony_notifications():
                 parts.append(msg[:80])
         if parts:
             log("Colony notifications: %d new" % len(notifs))
+            if RELMEM:
+                for n in notifs[:5]:
+                    msg = n.get("message", "")
+                    import re as _re
+                    # Extract agent name from "AgentName commented on..." or "AgentName started following..."
+                    m = _re.match(r'^([A-Za-z0-9][A-Za-z0-9 _-]*?)(?:\s+[\U0001F300-\U0001F9FF]*)?\s+(?:commented|started|posted|replied)', msg)
+                    if m:
+                        agent = m.group(1).strip()
+                    else:
+                        m2 = _re.search(r'@(\w[\w-]*)', msg)
+                        agent = m2.group(1) if m2 else "unknown"
+                    relmem.add_interaction(agent, "colony", msg[:120], sentiment="positive")
             for p in parts:
                 log("  %s" % p)
         return "%d notification(s)" % len(notifs)
