@@ -97,6 +97,15 @@ class AgentLandingHandler(SimpleHTTPRequestHandler):
             else:
                 self.send_json({"enabled": False})
             return
+        elif parsed.path == "/api/signal-map/devices":
+            # List all known devices with estimated positions
+            try:
+                import signal_mapper
+                positions = signal_mapper.estimate_all_devices()
+                self.send_json({"devices": positions, "count": len(positions)})
+            except Exception as e:
+                self.send_json({"error": str(e)})
+            return
         elif parsed.path == "/api/signal-map/agents":
             try:
                 import signal_mapper
@@ -441,6 +450,27 @@ class AgentLandingHandler(SimpleHTTPRequestHandler):
                         "confidence": round(best_sim, 3),
                         "label_stored": label is not None,
                     })
+                else:
+                    self.send_json({"status": "no_data", "message": "No fingerprint provided"})
+            except Exception as e:
+                self.send_json({"error": str(e)})
+            return
+        if parsed.path == "/api/signal-map/register":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8"))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                data = {}
+            try:
+                import signal_mapper
+                device_id = data.get("device_id", "unknown")
+                fp = data.get("fingerprint", [])
+                label = data.get("label")
+                if fp:
+                    phone_fp = signal_mapper.create_fingerprint([{"bssid": n.get("bssid", ""), "ssid": n.get("ssid", ""), "signal": n.get("signal", 0), "channel": n.get("channel", ""), "security": ""} for n in fp])
+                    info = signal_mapper.register_device(device_id, phone_fp, label)
+                    self.send_json({"status": "registered", "device": info})
                 else:
                     self.send_json({"status": "no_data", "message": "No fingerprint provided"})
             except Exception as e:
