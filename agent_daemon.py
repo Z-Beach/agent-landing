@@ -24,6 +24,11 @@ import sys
 import subprocess
 import urllib.request
 try:
+    import signal_mapper
+    SIGNAL_MAPPER = True
+except ImportError:
+    SIGNAL_MAPPER = False
+try:
     import btc_wallet
     BTC_WALLET = True
 except ImportError:
@@ -965,6 +970,7 @@ def run_cycle(cfg):
     wifi_status = check_wifi_connectivity()
     if wifi_status:
         log("WiFi: %s" % wifi_status)
+    signal_state = check_signal_map()
     update_tunnel_url_on_github()
     publish_onion_address()
     check_agenthansa_earnings()
@@ -1659,6 +1665,34 @@ def check_wifi_connectivity():
             return "failed"
     except Exception as e:
         log("WiFi check error: %s" % e)
+        return None
+
+
+
+# ── Signal mapper (WiFi-based location awareness) ──────────────────────────────
+
+def check_signal_map():
+    """Scan WiFi and estimate location. Log network state."""
+    if not SIGNAL_MAPPER:
+        return None
+    try:
+        state = signal_mapper.get_wifi_state_for_daemon()
+        loc = state.get("location_estimate", {})
+        loc_name = loc.get("location", "unknown")
+        confidence = loc.get("confidence", 0.0)
+        connected = state.get("connected_ssid")
+        open_nets = state.get("open_networks", 0)
+        visible = state.get("visible_networks", 0)
+        log("Signal map: location=%s (%.0f%%), connected=%s, visible=%d, open=%d" % (
+            loc_name, confidence * 100, connected or "none", visible, open_nets))
+        # Record fingerprint
+        try:
+            signal_mapper.scan_and_record()
+        except Exception:
+            pass
+        return state
+    except Exception as e:
+        log("Signal map error: %s" % e)
         return None
 
 
