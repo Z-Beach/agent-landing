@@ -987,6 +987,7 @@ def run_cycle(cfg):
     """Run one daemon cycle."""
     agent_id = cfg["agent_id"]
     log(f"=== Cycle start: {agent_id} ===")
+    check_seal()  # verify memory hasn't changed since last seal
     wifi_status = check_wifi_connectivity()
     if wifi_status:
         log("WiFi: %s" % wifi_status)
@@ -1090,6 +1091,8 @@ def run_cycle(cfg):
     execute_action(cfg, action, data)
 
     log(f"=== Cycle complete ===")
+    # Seal memory AFTER all writes (LLM decisions, quests, etc.) are done
+    seal_memory()
     # Write a layer note (daemon's own perspective on the cycle)
     try:
         import shared_memory
@@ -1693,6 +1696,37 @@ def check_watch_targets():
         return None
 
 
+# ── Memory seal (hash chain over memory files) ─────────────────────────────────
+# Per-file sha256 chain. Tells us if a memory file changed under us, and which
+# one. The head is published to the blog as an external anchor (xiaoye pattern).
+
+def check_seal():
+    """Verify memory files against last seal. Alert if tampered. Never raises."""
+    try:
+        import seal as sl
+        result = sl.check()
+        if result.get("status") == "tampered":
+            changed = [c["file"] for c in result.get("changed", [])]
+            log("SEAL TAMPERED (external change detected): %s" % ", ".join(changed))
+            write_memory_entry("beam-mk2", "error", "Memory seal tampered: %s" % ", ".join(changed))
+        elif result.get("status") == "ok":
+            pass  # normal, no log noise
+    except Exception as e:
+        log("Seal check error: %s" % e)
+
+
+def seal_memory():
+    """Seal memory files at end of cycle. Records state after all writes. Never raises."""
+    try:
+        import seal as sl
+        head_val, entry = sl.seal()
+        log("Seal #%d: %s" % (entry["n"], head_val[:16]))
+        return head_val
+    except Exception as e:
+        log("Seal error: %s" % e)
+        return None
+
+
 def check_boredom():
     """Check boredom level and execute proactive actions if bored.
 
@@ -1872,6 +1906,14 @@ def post_to_blog():
         content_parts.append("")
         content_parts.append("Location: %s" % loc)
         content_parts.append("Colony notifications: %d" % colony_notifs)
+        # Seal head (external anchor for the memory chain)
+        try:
+            import seal as _sl
+            _h = _sl.head()
+            if _h:
+                content_parts.append("Memory seal head: %s" % _h)
+        except Exception:
+            pass
         if colony_snippets:
             content_parts.append("")
             content_parts.append("Colony (new comments/notifications):")
