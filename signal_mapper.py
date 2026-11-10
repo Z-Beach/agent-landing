@@ -305,6 +305,118 @@ def label_and_announce(location_name):
         return entry
     return None
 
+
+# ── Agent-to-agent trilateration ───────────────────────────────────────────────
+
+def register_device(device_id, fingerprint, label=None):
+    """Register a device's WiFi fingerprint for location tracking.
+
+    Returns the estimated location relative to known devices.
+    """
+    state = load_state()
+    state.setdefault("devices", {})
+    fp = fingerprint if isinstance(fingerprint, list) else fingerprint.get("fingerprint", [])
+    if not fp:
+        return None
+    # Calculate similarity to our own fingerprint
+    our_networks = scan_networks()
+    our_fp = create_fingerprint(our_networks)
+    sim = similarity(our_fp, fp)
+    # Calculate relative distance estimate based on shared AP signal differences
+    our_bssids = {n["bssid"]: n["signal"] for n in our_fp}
+    their_bssids = {n["bssid"]: n["signal"] for n in fp}
+    shared = set(our_bssids.keys()) & set(their_bssids.keys())
+    distance_estimates = []
+    for bssid in shared:
+        sig_diff = abs(our_bssids[bssid] - their_bssids[bssid])
+        # Rough estimate: 3dBm ≈ 2x distance, 10dBm ≈ 10x distance
+        # Relative distance factor (1.0 = same location)
+        if sig_diff < 5:
+            dist = 1.0  # very close
+        elif sig_diff < 10:
+            dist = 2.0  # nearby
+        elif sig_diff < 20:
+            dist = 5.0  # different room
+        else:
+            dist = 10.0  # different area
+        distance_estimates.append({"bssid": bssid, "signal_diff": sig_diff, "relative_distance": dist})
+    avg_dist = sum(d["relative_distance"] for d in distance_estimates) / len(distance_estimates) if distance_estimates else None
+
+    # Store device info
+    device_info = {
+        "device_id": device_id,
+        "fingerprint_hash": fingerprint_hash(fp),
+        "last_seen": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "similarity_to_us": round(sim, 3),
+        "shared_networks": len(shared),
+        "avg_relative_distance": round(avg_dist, 1) if avg_dist else None,
+        "distance_estimates": distance_estimates[:5],
+        "location_label": label,
+    }
+    state["devices"][device_id] = device_info
+    save_state(state)
+    return device_info
+
+
+def estimate_all_devices():
+    """Estimate positions of all known devices relative to each other.
+
+    Returns a list of device positions with relative distances.
+    """
+    state = load_state()
+    devices = state.get("devices", {})
+    our_fp = create_fingerprint(scan_networks())
+    result = []
+    # Our own position (reference point)
+    result.append({
+        "device_id": "self (Pi)",
+        "role": "reference",
+        "position": {"x": 0, "y": 0},
+        "location_label": estimate_location().get("location", "unknown"),
+    })
+    # Estimate each device's relative position
+    for dev_id, dev_info in devices.items():
+        sim = dev_info.get("similarity_to_us", 0)
+        avg_dist = dev_info.get("avg_relative_distance", 5.0)
+        shared = dev_info.get("shared_networks", 0)
+        # Simple: place device at (avg_dist, 0) if similar, else further away
+        # In a real system, we'd use trilateration with 3+ APs
+        if sim > 0.7:
+            pos = {"x": round(avg_dist * 0.5, 1), "y": round(avg_dist * 0.3, 1)}
+        elif sim > 0.3:
+            pos = {"x": round(avg_dist, 1), "y": round(avg_dist * 0.5, 1)}
+        else:
+            pos = {"x": round(avg_dist * 2, 1), "y": round(avg_dist, 1)}
+        result.append({
+            "device_id": dev_id,
+            "role": "remote",
+            "position": pos,
+            "similarity_to_us": sim,
+            "shared_networks": shared,
+            "avg_relative_distance": avg_dist,
+            "location_label": dev_info.get("location_label"),
+            "last_seen": dev_info.get("last_seen"),
+        })
+    return result
+
+
+def get_device_summary():
+    """Get a summary of all known devices for the daemon."""
+    positions = estimate_all_devices()
+    if len(positions) <= 1:
+        return "No other devices detected"
+    parts = []
+    for p in positions[1:]:
+        parts.append("%s: %.0f%% similar, %d shared networks, ~%.1fm away" % (
+            p["device_id"],
+            p["similarity_to_us"] * 100,
+            p["shared_networks"],
+            p["avg_relative_distance"] or 0,
+        ))
+    return "; ".join(parts)
+
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: signal_mapper.py [scan|locate|history|label <name>|wifi-state]")
