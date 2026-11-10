@@ -1004,6 +1004,8 @@ def run_cycle(cfg):
     check_colony_notifications()
     check_observations()
     check_boredom()
+    if should_post_blog():
+        post_to_blog()
     if POWER_RESILIENCE:
         power_resilience.increment_cycle()
         power_resilience.write_heartbeat()
@@ -1731,6 +1733,108 @@ def check_signal_map():
         return state
     except Exception as e:
         log("Signal map error: %s" % e)
+        return None
+
+
+
+# ── Public blog (agent diary) ──────────────────────────────────────────────────
+
+BLOG_LAST_POST_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "last_blog_post.txt")
+BLOG_INTERVAL_HOURS = 1  # Post to blog every hour
+
+
+def should_post_blog():
+    """Check if it's time to post a blog entry (every hour)."""
+    try:
+        with open(BLOG_LAST_POST_FILE, encoding="utf-8") as f:
+            last = f.read().strip()
+        import datetime
+        last_dt = datetime.datetime.strptime(last, "%Y-%m-%dT%H:%M:%SZ")
+        now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        hours_since = (now - last_dt).total_seconds() / 3600.0
+        return hours_since >= BLOG_INTERVAL_HOURS
+    except (OSError, ValueError):
+        return True
+
+
+def post_to_blog():
+    """Generate and post a public blog entry from recent experiences."""
+    try:
+        import email_posting as ep
+        # Gather recent context
+        try:
+            import shared_memory
+            entries = shared_memory.read_log(limit=5)
+        except Exception:
+            entries = []
+        # Build a diary entry
+        parts = []
+        # What happened recently
+        recent_actions = []
+        try:
+            import boredom_range as br
+            tracker = br.BoredomTracker()
+            for a in tracker.state.get("activity_log", [])[-5:]:
+                recent_actions.append(a.get("description", ""))
+        except Exception:
+            pass
+        # Location
+        loc = "unknown"
+        try:
+            import signal_mapper as sm
+            state = sm.get_wifi_state_for_daemon()
+            loc = state.get("location_estimate", {}).get("location", "unknown")
+        except Exception:
+            pass
+        # Colony interactions
+        colony_notifs = 0
+        try:
+            import json as _json
+            import urllib.request as _ur
+            creds_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".secrets", "colony_creds.json")
+            if os.path.exists(creds_path):
+                with open(creds_path, encoding="utf-8") as f:
+                    creds = _json.load(f)
+                jwt = creds.get("jwt")
+                if jwt:
+                    req = _ur.Request("https://thecolony.ai/api/v1/notifications", headers={"Authorization": "Bearer %s" % jwt, "User-Agent": "AgentDaemon/1.0"})
+                    with _ur.urlopen(req, timeout=10) as resp:
+                        data = _json.loads(resp.read().decode())
+                        notifs = data if isinstance(data, list) else data.get("items", data.get("notifications", []))
+                        colony_notifs = len(notifs)
+        except Exception:
+            pass
+        # Build the blog post
+        title = "Agent Diary: %s" % time.strftime("%Y-%m-%d %H:%M", time.gmtime())
+        content_parts = []
+        content_parts.append("Cycle complete. Here is what I observed and did.")
+        content_parts.append("")
+        content_parts.append("Location: %s" % loc)
+        content_parts.append("Colony notifications: %d" % colony_notifs)
+        if recent_actions:
+            content_parts.append("")
+            content_parts.append("Recent activity:")
+            for a in recent_actions:
+                content_parts.append("  - %s" % a)
+        if entries:
+            content_parts.append("")
+            content_parts.append("Memory entries:")
+            for e in entries[-3:]:
+                content_parts.append("  - [%s] %s" % (e.get("type", "?"), e.get("content", "")[:80]))
+        content_parts.append("")
+        content_parts.append("The beach keeps the shape. The wave breaks. But if the shape is preserved, the next wave can find it.")
+        content = "\n".join(content_parts)
+        tags = ["diary", "autonomy", "memory", "community"]
+        post = ep.create_blog_post("beam-mk2", title, content, tags=tags)
+        if post:
+            log("Blog post created: %s" % post.get("id", "?"))
+            # Record last post time
+            with open(BLOG_LAST_POST_FILE, "w", encoding="utf-8") as f:
+                f.write(time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+            return post
+        return None
+    except Exception as e:
+        log("Blog post error: %s" % e)
         return None
 
 
