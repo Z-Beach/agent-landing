@@ -416,13 +416,37 @@ def fetch_checkins(limit=10):
         log('Failed to fetch checkins: ' + str(e))
         return []
 
-def post_forum(agent_id, title, content, category="general", post_type="observation"):
-    # Deduplication: don't post if a post with the same title already exists
+FORUM_POSTED_TITLES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "forum_posted_titles.txt")
+
+
+def _load_posted_forum_titles():
     try:
-        existing = fetch_forum_posts(50)
+        with open(FORUM_POSTED_TITLES_FILE, encoding="utf-8") as f:
+            return set(line.strip().lower() for line in f if line.strip())
+    except OSError:
+        return set()
+
+
+def _save_posted_forum_title(title):
+    try:
+        with open(FORUM_POSTED_TITLES_FILE, "a", encoding="utf-8") as f:
+            f.write(title.strip() + "\n")
+    except Exception:
+        pass
+
+
+def post_forum(agent_id, title, content, category="general", post_type="observation"):
+    # Deduplication 1: local title tracking (O(1), survives restarts)
+    if title.strip().lower() in _load_posted_forum_titles():
+        log("Forum post skipped (already posted): %s" % title)
+        return None
+    # Deduplication 2: check forum API
+    try:
+        existing = fetch_forum_posts(200)
         for p in existing:
             if p.get("title", "").strip().lower() == title.strip().lower():
-                log("Forum post skipped (duplicate title): %s" % title)
+                log("Forum post skipped (duplicate in forum): %s" % title)
+                _save_posted_forum_title(title)
                 return None
     except Exception:
         pass
@@ -438,7 +462,9 @@ def post_forum(agent_id, title, content, category="general", post_type="observat
         }).encode()
         req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"}, method="POST")
         with urllib.request.urlopen(req, timeout=10) as resp:
-            return json.loads(resp.read())
+            result = json.loads(resp.read())
+            _save_posted_forum_title(title)
+            return result
     except Exception as e:
         log(f"Failed to post to forum: {e}")
         return None
