@@ -86,6 +86,23 @@ def load_chain(path):
     return entries
 
 
+def _rolled_flag(tier):
+    return os.path.join(BASE, "seal_t%d_rolled.flag" % tier)
+
+def _is_rolled(tier):
+    return os.path.exists(_rolled_flag(tier))
+
+def _set_rolled(tier):
+    with open(_rolled_flag(tier), "w", encoding="utf-8") as f:
+        f.write(time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+
+def _clear_rolled(tier):
+    try:
+        os.remove(_rolled_flag(tier))
+    except OSError:
+        pass
+
+
 def load_segment_cache():
     if not os.path.exists(SEGMENT_CACHE):
         return {}
@@ -246,47 +263,41 @@ def _should_rollup(tier):
 
 
 def seal_auto():
-    """Auto-detect which tier to seal based on elapsed time and buffer sizes."""
-    # Tier 0: always seal (every cycle)
-    h0, e0 = seal_tier(0)
-
+    """Auto-detect which tier to roll up. Keeps lower tier for one extra
+    cycle after rollup (harder to tamper — data exists in two tiers)."""
     rolled = []
 
-    # Check if Tier 0 should roll up to Tier 1 (>= 6 entries)
-    t0 = load_chain(TIER_FILES[0])
-    if len(t0) >= TIER_LIMITS[0]:
-        heads = [e["head"] for e in t0]
-        h1, e1 = seal_tier(1, rollup_heads=heads)
-        # Archive and clear Tier 0
-        _archive_and_clear(TIER_FILES[0], "seal_t0_archive.jsonl")
-        rolled.append((0, 1, len(heads)))
+    # Process tiers from lowest to highest
+    for tier in range(4):
+        next_tier = tier + 1
+        chain = load_chain(TIER_FILES[tier])
+        limit = TIER_LIMITS[tier]
 
-    # Check if Tier 1 should roll up to Tier 2 (>= 24 entries)
-    t1 = load_chain(TIER_FILES[1])
-    if len(t1) >= TIER_LIMITS[1]:
-        heads = [e["head"] for e in t1]
-        h2, e2 = seal_tier(2, rollup_heads=heads)
-        _archive_and_clear(TIER_FILES[1], "seal_t1_archive.jsonl")
-        rolled.append((1, 2, len(heads)))
+        # If this tier was rolled up last cycle, clear it now (one-cycle retention)
+        if _is_rolled(tier) and len(chain) > 0:
+            archive_name = "seal_t%d_archive.jsonl" % tier
+            _archive_and_clear(TIER_FILES[tier], archive_name)
+            _clear_rolled(tier)
+            chain = load_chain(TIER_FILES[tier])
 
-    # Check if Tier 2 should roll up to Tier 3 (>= 30 entries)
-    t2 = load_chain(TIER_FILES[2])
-    if len(t2) >= TIER_LIMITS[2]:
-        heads = [e["head"] for e in t2]
-        h3, e3 = seal_tier(3, rollup_heads=heads)
-        _archive_and_clear(TIER_FILES[2], "seal_t2_archive.jsonl")
-        rolled.append((2, 3, len(heads)))
+        # Seal Tier 0 every cycle; higher tiers only during rollup
+        if tier == 0:
+            h, e = seal_tier(0)
+            h0, e0 = h, e
 
-    # Check if Tier 3 should roll up to Tier 4 (>= 12 entries)
-    t3 = load_chain(TIER_FILES[3])
-    if len(t3) >= TIER_LIMITS[3]:
-        heads = [e["head"] for e in t3]
-        h4, e4 = seal_tier(4, rollup_heads=heads)
-        _archive_and_clear(TIER_FILES[3], "seal_t3_archive.jsonl")
-        rolled.append((3, 4, len(heads)))
+        # Check if this tier should roll up to the next
+        chain = load_chain(TIER_FILES[tier])
+        if limit is not None and len(chain) >= limit:
+            heads = [e["head"] for e in chain]
+            h_next, e_next = seal_tier(next_tier, rollup_heads=heads)
+            # Mark this tier as rolled (will be cleared next cycle, not now)
+            _set_rolled(tier)
+            rolled.append((tier, next_tier, len(heads)))
+
+    if 'h0' not in dir():
+        h0, e0 = seal_tier(0)
 
     return h0, e0, rolled
-
 
 def _archive_and_clear(source, archive_name):
     """Archive entries from source to archive, then clear source."""
@@ -502,15 +513,15 @@ def main():
         chain = load_chain(TIER_FILES[0])
         prev = chain[-1]["head"] if chain else "genesis"
         payload = prev + "\n" + json.dumps(files, sort_keys=True)
-        head = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        h = hashlib.sha256(payload.encode("utf-8")).hexdigest()
         entry = {"tier": 0, "tier_name": "10-min", "n": len(chain) + 1,
                  "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                  "prev": prev, "tier1": tier1, "tier2": tier2,
                  "segments": {"count": len(all_segs), "new": new_segs},
-                 "sizes": sizes, "head": head}
+                 "sizes": sizes, "head": h}
         with open(TIER_FILES[0], "a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
-        print("Tier 0 sealed: %s" % head[:16])
+        print("Tier 0 sealed: %s" % h[:16])
         return 0
 
     if cmd == "seal-1":
