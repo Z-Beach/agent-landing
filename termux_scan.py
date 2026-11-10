@@ -15,6 +15,7 @@ Requirements:
     - Python 3 (pkg install python)
     - requests (pip install requests)
     - WiFi permission granted to Termux
+    - For .onion access: Orbot (Tor proxy) from F-Droid
 """
 import json
 import os
@@ -23,13 +24,69 @@ import sys
 import time
 import urllib.request
 
-# Default Pi URL - change this to your Pi's address
-PI_URL = os.environ.get("PI_URL", "http://192.168.1.40")
-SCAN_INTERVAL = 60  # seconds between scans in daemon mode
+# Pi addresses (in priority order)
+ONION_ADDRESS_FILE = "https://raw.githubusercontent.com/Z-Beach/agent-landing/main/onion-address.txt"
+TUNNEL_URL_FILE = "https://raw.githubusercontent.com/Z-Beach/agent-landing/main/tunnel-url.txt"
+LAN_URL = "http://192.168.1.40"
+SCAN_INTERVAL = 60
+
+
+def get_pi_url():
+    """Get the Pi URL. Priority: env var > .onion (via Tor) > tunnel URL > LAN."""
+    if os.environ.get("PI_URL"):
+        return os.environ["PI_URL"]
+
+    # Try .onion first (stable, permanent)
+    onion_url = None
+    try:
+        req = urllib.request.Request(ONION_ADDRESS_FILE, headers={"User-Agent": "TermuxScanner/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            text = r.read().decode("utf-8", "replace")
+            import re
+            m = re.search(r"([a-z2-7]{56}\.onion)", text)
+            if m:
+                onion_url = "http://" + m.group(1)
+    except Exception:
+        pass
+
+    if onion_url:
+        # Check if Tor SOCKS proxy is available (Orbot on port 9050)
+        try:
+            import socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(2)
+            s.connect(("127.0.0.1", 9050))
+            s.close()
+            # Tor is available, use .onion
+            os.environ["http_proxy"] = "socks5h://127.0.0.1:9050"
+            os.environ["https_proxy"] = "socks5h://127.0.0.1:9050"
+            print("Using Tor .onion address (stable, permanent)")
+            return onion_url
+        except (socket.error, socket.timeout):
+            pass
+
+    # Fall back to tunnel URL from GitHub
+    try:
+        req = urllib.request.Request(TUNNEL_URL_FILE, headers={"User-Agent": "TermuxScanner/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            text = r.read().decode("utf-8", "replace")
+            import re
+            m = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", text)
+            if m:
+                print("Using tunnel URL (rotates, but currently active)")
+                return m.group(0)
+    except Exception:
+        pass
+
+    # Fall back to LAN IP
+    print("Using LAN IP (only works on same network)")
+    return LAN_URL
+
+
+PI_URL = get_pi_url()
 
 
 def run_cmd(cmd, timeout=15):
-    """Run a shell command and return (returncode, stdout, stderr)."""
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, shell=True)
         return result.returncode, result.stdout.strip(), result.stderr.strip()
@@ -40,14 +97,10 @@ def run_cmd(cmd, timeout=15):
 
 
 def scan_wifi_termux():
-    """Scan WiFi networks using Android's dumpsys wifi."""
-    # Try dumpsys wifi
     rc, out, err = run_cmd("dumpsys wifi | grep -i 'SSID:' | head -50")
     if rc != 0 or not out:
-        # Try alternative
         rc, out, err = run_cmd("dumpsys wifi 2>/dev/null | grep -E 'SSID:|BSSID:|level:' | head -50")
     if rc != 0 or not out:
-        # Try iw
         rc, out, err = run_cmd("su -c 'iw dev wlan0 scan' 2>/dev/null | head -50")
     if rc != 0 or not out:
         print("WiFi scan failed. Make sure Termux has location permission.")
@@ -55,18 +108,13 @@ def scan_wifi_termux():
         return []
 
     networks = []
-    # Parse dumpsys output
-    # Format varies by Android version, try multiple patterns
     current = {}
     for line in out.splitlines():
         line = line.strip()
         if "BSSID:" in line or "bssid:" in line.lower():
             if current and current.get("bssid"):
                 networks.append(current)
-            bssid = line.split(":")[-1].strip() if ":" in line else ""
-            # Handle BSSID with colons
-            if "BSSID:" in line:
-                bssid = line.split("BSSID:")[-1].strip()
+            bssid = line.split("BSSID:")[-1].strip() if "BSSID:" in line else ""
             current = {"bssid": bssid, "ssid": "", "signal": 0, "channel": ""}
         elif "SSID:" in line and "BSSID" not in line:
             ssid = line.split("SSID:")[-1].strip()
@@ -77,13 +125,12 @@ def scan_wifi_termux():
                 if part.isdigit() and int(part) < 0:
                     if current:
                         current["signal"] = int(part)
-                # Also try to extract signal from "level: -45" format
-                if "level:" in line.lower():
-                    try:
-                        val = line.split("level:")[-1].strip().split()[0]
-                        current["signal"] = int(val)
-                    except (ValueError, IndexError):
-                        pass
+            if "level:" in line.lower():
+                try:
+                    val = line.split("level:")[-1].strip().split()[0]
+                    current["signal"] = int(val)
+                except (ValueError, IndexError):
+                    pass
         elif "frequency:" in line.lower() or "freq:" in line.lower():
             try:
                 val = line.split(":")[-1].strip().split()[0]
@@ -95,13 +142,11 @@ def scan_wifi_termux():
     if current and current.get("bssid"):
         networks.append(current)
 
-    # If parsing failed, try alternative: use termux-wifi-scaninfo if available
     if not networks:
         rc, out, err = run_cmd("termux-wifi-scaninfo 2>/dev/null")
         if rc == 0 and out:
             try:
-                import json as _json
-                data = _json.loads(out)
+                data = json.loads(out)
                 for net in data:
                     networks.append({
                         "bssid": net.get("bssid", ""),
@@ -116,7 +161,6 @@ def scan_wifi_termux():
 
 
 def build_fingerprint(networks):
-    """Build a fingerprint from scan results."""
     sorted_nets = sorted(networks, key=lambda x: x.get("signal", 0), reverse=True)
     fingerprint = []
     for net in sorted_nets[:10]:
@@ -130,8 +174,6 @@ def build_fingerprint(networks):
 
 
 def send_to_pi(fingerprint, label=None):
-    """Send fingerprint to Pi and get location estimate."""
-    import json as _json
     data = {
         "agent_id": "android-termux",
         "fingerprint": fingerprint,
@@ -141,11 +183,11 @@ def send_to_pi(fingerprint, label=None):
     try:
         req = urllib.request.Request(
             PI_URL + "/api/signal-map/scan",
-            data=_json.dumps(data).encode(),
+            data=json.dumps(data).encode(),
             headers={"Content-Type": "application/json", "User-Agent": "TermuxScanner/1.0"},
         )
         with urllib.request.urlopen(req, timeout=15) as r:
-            resp = _json.loads(r.read().decode())
+            resp = json.loads(r.read().decode())
             return resp
     except Exception as e:
         print("Error sending to Pi:", e)
@@ -153,7 +195,6 @@ def send_to_pi(fingerprint, label=None):
 
 
 def get_location_from_pi():
-    """Get current location estimate from Pi."""
     try:
         req = urllib.request.Request(PI_URL + "/api/signal-map", headers={"User-Agent": "TermuxScanner/1.0"})
         with urllib.request.urlopen(req, timeout=10) as r:
@@ -164,7 +205,6 @@ def get_location_from_pi():
 
 
 def get_pi_fingerprint():
-    """Get Pi's fingerprint from the Pi."""
     try:
         req = urllib.request.Request(PI_URL + "/api/signal-map/fingerprint", headers={"User-Agent": "TermuxScanner/1.0"})
         with urllib.request.urlopen(req, timeout=10) as r:
@@ -223,7 +263,6 @@ def main():
         else:
             print("Usage: termux_scan.py [--daemon|--scan|--locate|--label <name>|--pi-fingerprint]")
     else:
-        # One-shot scan
         networks = scan_wifi_termux()
         if networks:
             fp = build_fingerprint(networks)
@@ -238,4 +277,4 @@ def main():
 if __name__ == "__main__":
     main()
 EOF
-print("Created termux_scan.py")
+print("Created termux_scan.py with Tor priority")
