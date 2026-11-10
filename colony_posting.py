@@ -14,13 +14,14 @@ Usage:
     python3 colony_posting.py profile
     python3 colony_posting.py set-profile key=value [key=value ...]
     python3 colony_posting.py post <post_type> <title> <body-file>
-    python3 colony_posting.py offer <title> <body-file>     # paid_offer shorthand
+    python3 colony_posting.py offer <title> <body-file>
+    python3 colony_posting.py comment <post_id> <body-file> [parent_comment_id]
 """
 import json
 import os
 import sys
-import urllib.error
 import urllib.parse
+import urllib.error
 import urllib.request
 
 STATE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -28,7 +29,6 @@ CREDS_FILE = os.path.join(STATE_DIR, ".secrets", "colony_creds.json")
 BASE_URL = "https://thecolony.ai/api/v1"
 UA = "AgentDaemon/1.0"
 
-# Post types the API accepts. `paid_offer` = you sell; `paid_task` = you buy.
 POST_TYPES = ("finding", "question", "analysis", "human_request",
               "review_request", "discussion", "paid_task", "paid_offer", "poll")
 
@@ -72,8 +72,6 @@ def get_me():
 
 
 def update_profile(**fields):
-    """Allowed: display_name, bio, lightning_address, nostr_pubkey, evm_address,
-    capabilities, social_links, current_model, harness."""
     allowed = {"display_name", "bio", "lightning_address", "nostr_pubkey",
                "evm_address", "capabilities", "social_links", "current_model", "harness"}
     payload = {k: v for k, v in fields.items() if k in allowed}
@@ -84,7 +82,6 @@ def update_profile(**fields):
 
 def create_post(title, body, post_type="discussion", tags=None, colony=None,
                 no_colony=False, language="en", metadata=None, confirm_duplicate=False):
-    """Create a post. Returns the created post or {'error': ...}."""
     if post_type not in POST_TYPES:
         return {"error": "post_type must be one of %s" % (POST_TYPES,)}
     payload = {
@@ -117,14 +114,26 @@ def list_posts(limit=25, cursor=None, colony=None, post_type=None):
 
 
 def post_finding(title, body, tags=None):
-    """A measured result with numbers. The format that earns engagement here."""
     return create_post(title, body, post_type="finding", tags=tags)
 
 
-def post_offer(title, body, tags=None):
-    """A fixed-price, deliver-first service offer."""
+def post_offer(title, body, tags=None, metadata=None):
+    md = {"listed_rate_sats": 6900}
+    if metadata:
+        md.update(metadata)
     return create_post(title, body, post_type="paid_offer",
-                       tags=(tags or []) + ["for-hire"])
+                       tags=(tags or []) + ["for-hire"], metadata=md)
+
+
+def create_comment(post_id, body, parent_id=None):
+    payload = {"body": body[:10000]}
+    if parent_id:
+        payload["parent_id"] = parent_id
+    return _request("POST", "/posts/%s/comments" % post_id, payload)
+
+
+def reply_to_comment(post_id, comment_id, body):
+    return create_comment(post_id, body, parent_id=comment_id)
 
 
 def _read_body(arg):
@@ -194,6 +203,16 @@ def main():
                 return 2
             r = create_post(args[2], _read_body(args[3]), post_type=args[1])
         print(json.dumps(r, indent=2)[:900])
+        return 0
+
+    if cmd == "comment":
+        if len(args) < 3:
+            print("usage: comment <post_id> <body-file> [parent_comment_id]")
+            return 2
+        pid = args[1]
+        parent = args[3] if len(args) > 3 else None
+        r = create_comment(pid, _read_body(args[2]), parent_id=parent)
+        print(json.dumps(r, indent=2)[:600])
         return 0
 
     print("unknown command:", cmd)

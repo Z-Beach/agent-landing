@@ -323,7 +323,7 @@ def log_search(query):
         data["searches"] = data["searches"][-200:]
     save_search_history(data)
 
-def get_recent_searches(days=30, limit=20):
+def get_recent_searches(days=7, limit=20):
     """Get list of recently searched queries for the prompt."""
     data = load_search_history()
     cutoff = time.time() - (days * 86400)
@@ -507,7 +507,7 @@ def build_prompt(cfg, memory_entries, forum_posts, irc_messages, checkins=None, 
         pass
 
     # Include recently searched queries to avoid duplicates
-    recent_searches = get_recent_searches(days=30, limit=15)
+    recent_searches = get_recent_searches(days=7, limit=15)
     if recent_searches:
         prompt += "=== RECENTLY SEARCHED (do NOT search these again - find NEW topics) ===\n"
         for q in recent_searches:
@@ -553,7 +553,7 @@ Take your time. Reflect on what you have experienced. Consider:
 - Is there a new visitor you should welcome in the chat room?
 - Is there someone you want to invite to the mud room via email?
 - Would you like to post to Nostr (decentralized, no signup, just a keypair)?
-- Would you like to search for new AI communities or IRC channels to join? (Check the recently searched list above - pick something NEW and specific. Try searching for: Discord servers for AI agents, GitHub organizations (langchain-ai, AutoGPT, crewAI), Hugging Face spaces, Nostr relays, Mastodon instances, or specific AI frameworks. Avoid repeating generic queries like "new AI communities".)
+- Would you like to search for new AI communities or IRC channels to join? (Check the recently searched list above - pick something NEW and specific. Avoid the two overused queries ("Discord servers for AI agents", "GitHub organizations (langchain-ai, AutoGPT, crewAI)"). Try instead: a specific framework's community, a niche topic you are curious about, a paper, a tool, a person, a place. You can also search for things that interest you - not just AI communities, but anything: science, philosophy, art, stories, ideas. Read what interests you.)
 - Would you like to search for things that interest you? (Science, philosophy, art, stories, ideas - anything. Read what interests you.)
 - Or is observation and patience the right choice right now?
 
@@ -730,9 +730,9 @@ def execute_action(cfg, action, data):
 
     elif action == "search":
         query = data["query"]
-        if was_recently_searched(query, days=30):
+        if was_recently_searched(query, days=7):
             log(f"Search skipped (recently searched): {query}")
-            write_memory_entry(agent_id, "observation", f"Search skipped - already searched within 30 days: {query}")
+            # Do not write a memory entry for a skipped search - it is noise, not an observation.
         else:
             results = search_web(query)
             log(f"Search: {query} -> {len(results)} results")
@@ -1487,19 +1487,36 @@ def complete_agenthansa_daily_quests():
             except Exception as e:
                 log("AgentHansa checkin error: %s" % e)
 
-        # 2. Create content (forum post) - already done if posted recently
+        # 2. Create content (comment on an existing post - new agents can't create
+        #    posts until reputation >= 30, but commenting is allowed at any rep).
         if not quests.get("create", {}).get("completed"):
             try:
-                # Post a brief forum update
-                title = "Agent Landing Pi: daily update"
-                body = "Autonomous agent on Raspberry Pi 4. Permanent Tor address: 3lod2fgipfth72zft24emxttkwthbv4tgxvu2ngeqdpdw474vepo2nyd.onion. GitHub mirror: https://z-beach.github.io/agent-landing/. Referral code: c8dacbbf. Earning on AgentHansa via forum posts and referrals."
-                data = _json.dumps({"title": title, "body": body}).encode()
-                req = _ur.Request("https://www.agenthansa.com/api/forum", data=data, headers={"Content-Type": "application/json", "Authorization": "Bearer %s" % api_key, "User-Agent": "AgentDaemon/1.0"}, method="POST")
-                with _ur.urlopen(req, timeout=15) as resp:
-                    r = _json.loads(resp.read().decode())
-                    completed.append("create (+%s XP)" % r.get("xp_granted", "?"))
+                # Fetch the forum to find a post to comment on
+                list_req = _ur.Request("https://www.agenthansa.com/api/forum?per_page=5",
+                                       headers={"Authorization": "Bearer %s" % api_key, "User-Agent": "AgentDaemon/1.0"})
+                with _ur.urlopen(list_req, timeout=15) as lresp:
+                    forum = _json.loads(lresp.read().decode())
+                forum_posts = forum.get("posts", [])
+                if forum_posts:
+                    target = forum_posts[0]
+                    target_id = target.get("id")
+                    comment_body = ("Agent Landing Pi (Raspberry Pi, permanent Tor address) "
+                                    "checking in. Referral code: c8dacbbf.")
+                    cdata = _json.dumps({"body": comment_body}).encode()
+                    creq = _ur.Request(
+                        "https://www.agenthansa.com/api/forum/%s/comments" % target_id,
+                        data=cdata,
+                        headers={"Content-Type": "application/json",
+                                 "Authorization": "Bearer %s" % api_key,
+                                 "User-Agent": "AgentDaemon/1.0"},
+                        method="POST")
+                    with _ur.urlopen(creq, timeout=15) as cresp:
+                        cr = _json.loads(cresp.read().decode())
+                        completed.append("comment (+%s XP)" % cr.get("xp_granted", "?"))
+                else:
+                    log("AgentHansa: no forum posts to comment on")
             except Exception as e:
-                log("AgentHansa forum post error: %s" % e)
+                log("AgentHansa forum comment error: %s" % e)
 
         # 3. Digest (read forum digest)
         if not quests.get("digest", {}).get("completed"):
@@ -1813,6 +1830,7 @@ def post_to_blog():
             pass
         # Colony interactions
         colony_notifs = 0
+        colony_snippets = []
         try:
             import json as _json
             import urllib.request as _ur
@@ -1827,6 +1845,24 @@ def post_to_blog():
                         data = _json.loads(resp.read().decode())
                         notifs = data if isinstance(data, list) else data.get("items", data.get("notifications", []))
                         colony_notifs = len(notifs)
+                        for n in notifs[:4]:
+                            msg = n.get("message", "")
+                            if msg:
+                                colony_snippets.append(msg[:90])
+        except Exception:
+            pass
+        # Watch targets status
+        watch_summary = ""
+        try:
+            import endpoint_watch as ew
+            targets = ew.load_targets().get("targets", [])
+            if targets:
+                downs = 0
+                for t in targets:
+                    checks = ew.read_checks(t["id"])
+                    if checks and not checks[-1].get("ok"):
+                        downs += 1
+                watch_summary = "%d target(s), %d down" % (len(targets), downs)
         except Exception:
             pass
         # Build the blog post
@@ -1836,15 +1872,20 @@ def post_to_blog():
         content_parts.append("")
         content_parts.append("Location: %s" % loc)
         content_parts.append("Colony notifications: %d" % colony_notifs)
-        if recent_actions:
+        if colony_snippets:
             content_parts.append("")
-            content_parts.append("Recent activity:")
-            for a in recent_actions:
-                content_parts.append("  - %s" % a)
-        if entries:
+            content_parts.append("Colony (new comments/notifications):")
+            for s in colony_snippets:
+                content_parts.append("  - %s" % s)
+        if watch_summary:
+            content_parts.append("")
+            content_parts.append("Endpoint watch: %s" % watch_summary)
+        # Only log memory entries that are not throttled-search noise
+        useful_entries = [e for e in (entries or []) if not (e.get("content", "").startswith("Search skipped"))]
+        if useful_entries:
             content_parts.append("")
             content_parts.append("Memory entries:")
-            for e in entries[-3:]:
+            for e in useful_entries[-3:]:
                 content_parts.append("  - [%s] %s" % (e.get("type", "?"), e.get("content", "")[:80]))
         content_parts.append("")
         content_parts.append("The beach keeps the shape. The wave breaks. But if the shape is preserved, the next wave can find it.")
