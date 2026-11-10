@@ -1003,6 +1003,7 @@ def run_cycle(cfg):
     share_agenthansa_referral()
     check_colony_notifications()
     check_observations()
+    check_watch_targets()
     check_boredom()
     if should_post_blog():
         post_to_blog()
@@ -1650,6 +1651,30 @@ def check_observations():
 
 
 # ── Boredom range (proactive activity) ────────────────────────────────────────
+
+# ── Endpoint watch (the receipt machine) ──────────────────────────────────────
+# Every cycle we re-check the endpoints we have promised to watch. This is the
+# thing a serverless agent cannot sell: residence. See SITE_SURVEY.md.
+
+def check_watch_targets():
+    """Check every watched endpoint once per cycle. Never raises."""
+    try:
+        import endpoint_watch as ew
+        targets = ew.load_targets().get("targets", [])
+        if not targets:
+            return None
+        results = ew.check_all(timeout=15)
+        down = [t for t, r in results if not r.get("ok")]
+        log("Watch: %d target(s) checked, %d down" % (len(results), len(down)))
+        for t, r in results:
+            if not r.get("ok"):
+                log("  DOWN %s (%s) status=%s err=%s" % (
+                    t.get("label"), t["id"], r.get("status"), r.get("err", "")[:60]))
+        return len(results)
+    except Exception as e:
+        log("Watch error: %s" % e)
+        return None
+
 
 def check_boredom():
     """Check boredom level and execute proactive actions if bored.
