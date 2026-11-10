@@ -97,6 +97,30 @@ class AgentLandingHandler(SimpleHTTPRequestHandler):
             else:
                 self.send_json({"enabled": False})
             return
+        elif parsed.path == "/api/signal-map/agents":
+            try:
+                import signal_mapper
+                state = signal_mapper.load_state()
+                agents = state.get("agents", {})
+                my_fp = signal_mapper.get_my_fingerprint()
+                result = {
+                    "self": {
+                        "agent_id": "beam-mk2",
+                        "location": my_fp.get("location_label", "unknown") if my_fp else "unknown",
+                        "fingerprint_hash": my_fp.get("fingerprint_hash") if my_fp else None,
+                    },
+                    "known_agents": [
+                        {"agent_id": aid, "location": info.get("location", "unknown"),
+                         "confidence": info.get("confidence", 0.0),
+                         "last_seen": info.get("last_seen", "")}
+                        for aid, info in agents.items()
+                    ],
+                    "total_known": len(agents),
+                }
+                self.send_json(result)
+            except Exception as e:
+                self.send_json({"error": str(e)})
+            return
         elif parsed.path == "/api/signal-map/fingerprint":
             # Share our WiFi fingerprint (no raw BSSIDs for privacy - just hash + location)
             try:
@@ -397,6 +421,13 @@ class AgentLandingHandler(SimpleHTTPRequestHandler):
                             if sim > best_sim:
                                 best_sim = sim
                                 best_match = loc_name
+                    state.setdefault("agents", {})
+                    state["agents"][agent_id] = {
+                        "location": best_match if best_sim > 0.3 else "unknown",
+                        "confidence": round(best_sim, 3),
+                        "last_seen": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        "fingerprint_hash": signal_mapper.fingerprint_hash(phone_fp),
+                    }
                     if label:
                         state.setdefault("locations", {}).setdefault(label, {"fingerprints": [], "first_seen": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
                         state["locations"][label]["fingerprints"].append(phone_fp)
