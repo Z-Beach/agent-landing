@@ -374,7 +374,48 @@ class AgentLandingHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
         # Handle agent verification BEFORE gate check
-        if parsed.path == "/api/signal-map/estimate":
+        if parsed.path == "/api/signal-map/scan":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8"))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                data = {}
+            try:
+                import signal_mapper
+                fp = data.get("fingerprint", [])
+                label = data.get("label")
+                agent_id = data.get("agent_id", "android")
+                if fp:
+                    phone_fp = signal_mapper.create_fingerprint([{"bssid": n.get("bssid", ""), "ssid": n.get("ssid", ""), "signal": n.get("signal", 0), "channel": n.get("channel", ""), "security": ""} for n in fp])
+                    state = signal_mapper.load_state()
+                    best_match = None
+                    best_sim = 0.0
+                    for loc_name, loc_data in state.get("locations", {}).items():
+                        for known_fp in loc_data.get("fingerprints", []):
+                            sim = signal_mapper.similarity(phone_fp, known_fp)
+                            if sim > best_sim:
+                                best_sim = sim
+                                best_match = loc_name
+                    if label:
+                        state.setdefault("locations", {}).setdefault(label, {"fingerprints": [], "first_seen": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+                        state["locations"][label]["fingerprints"].append(phone_fp)
+                        state["locations"][label]["last_seen"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                        state["locations"][label]["scan_count"] = state["locations"][label].get("scan_count", 0) + 1
+                        signal_mapper.save_state(state)
+                    self.send_json({
+                        "status": "recorded",
+                        "agent_id": agent_id,
+                        "location": best_match if best_sim > 0.3 else "unknown",
+                        "confidence": round(best_sim, 3),
+                        "label_stored": label is not None,
+                    })
+                else:
+                    self.send_json({"status": "no_data", "message": "No fingerprint provided"})
+            except Exception as e:
+                self.send_json({"error": str(e)})
+            return
+        elif parsed.path == "/api/signal-map/estimate":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length) if content_length > 0 else b"{}"
             try:
