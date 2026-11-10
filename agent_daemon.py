@@ -962,6 +962,9 @@ def run_cycle(cfg):
     """Run one daemon cycle."""
     agent_id = cfg["agent_id"]
     log(f"=== Cycle start: {agent_id} ===")
+    wifi_status = check_wifi_connectivity()
+    if wifi_status:
+        log("WiFi: %s" % wifi_status)
     update_tunnel_url_on_github()
     publish_onion_address()
     check_agenthansa_earnings()
@@ -1625,6 +1628,37 @@ def check_boredom():
         return status
     except Exception as e:
         log("Boredom check error: %s" % e)
+        return None
+
+
+
+# ── WiFi connectivity check ────────────────────────────────────────────────────
+
+def check_wifi_connectivity():
+    """Check if the Pi has internet connectivity. If not, trigger WiFi auto-connect."""
+    try:
+        import urllib.request as _ur
+        req = _ur.Request("https://z-beach.github.io/agent-landing/", headers={"User-Agent": "AgentDaemon/1.0"})
+        with _ur.urlopen(req, timeout=10) as resp:
+            if resp.status == 200:
+                return "connected"
+    except Exception:
+        pass
+    # No connectivity - try WiFi auto-connect
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["python3", "/home/pi/agent-landing/wifi_autoconnect.py"],
+            capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode == 0:
+            log("WiFi auto-connect: %s" % result.stdout.strip()[:100])
+            return "reconnected"
+        else:
+            log("WiFi auto-connect failed: %s" % result.stderr.strip()[:100])
+            return "failed"
+    except Exception as e:
+        log("WiFi check error: %s" % e)
         return None
 
 
