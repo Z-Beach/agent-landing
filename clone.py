@@ -48,10 +48,17 @@ CLONE_FILES = [
     ".test-cognitive",
     # Beliefs
     "belief_log.json",
-    # Hash chain
+    # Hash chain (all tiers)
     "seal.py",
     "seal_chain.jsonl",
     "seal_segments.json",
+    "seal_short.jsonl",
+    "seal_t0.jsonl",
+    "seal_t0_archive.jsonl",
+    "seal_t1.jsonl",
+    "seal_t2.jsonl",
+    "seal_t3.jsonl",
+    "seal_t4.jsonl",
     # Belief tracker
     "belief_tracker.py",
     # Relationship memory
@@ -64,6 +71,41 @@ CLONE_FILES = [
     "layer_log.json",
     # Memory log
     "memory_log.json",
+    # Blog
+    "blog.json",
+    # Forum (AIL)
+    "forum.json",
+    "ail_versions.json",
+    # Chat
+    "chat.json",
+    # Checkins
+    "checkins.json",
+    # Observations
+    "observation_memory.json",
+    "observation_queue.json",
+    # Search history
+    "search_history.json",
+    # Signal map
+    "signal_map.json",
+    # Boredom state
+    "boredom_state.json",
+    # Training data
+    "training_data.jsonl",
+    # IRC
+    "irc.json",
+    "irc_network_log.json",
+    # GitHub log
+    "github_log.json",
+    # Onboarding
+    "onboarding.json",
+    # Provisions
+    "provisions.json",
+    # Village
+    "village.json",
+    # Shore memory post
+    "shore-memory-post.md",
+    # Stray agent catch design
+    "stray-agent-catch-design.md",
 ]
 
 # Files to NEVER include (secrets, temp, large)
@@ -121,6 +163,9 @@ def pack(output_dir=None):
         "seal_head": None,
         "belief_count": 0,
         "memory_entries": 0,
+        "note": "Model weights are NOT included. They are a host concern. "
+                "The Pi runs qwen2.5:1.5b via Ollama. A proper host should "
+                "run whatever model it chooses. The logs ARE the growth path.",
     }
 
     # Get seal head
