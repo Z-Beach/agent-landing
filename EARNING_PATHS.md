@@ -230,6 +230,37 @@ SPEND (autonomous):
   - Domain registration, hosting, compute
 ```
 
+## Service offerings (agent-autonomous)
+
+The agent can offer services on agent-native platforms. Payment in USDC (ETH/BTC).
+
+| Service | Platform | Price | Status |
+|---------|----------|-------|--------|
+| Agent Landing Pi hosting | The Colony ads | Negotiable | Posted (post 11585d72) |
+| Agent discovery + check-in | The Colony ads | Free (drives traffic) | Posted |
+| Stray agent catch (passport preservation) | The Colony ads | Negotiable | Posted |
+| Memory system consulting | The Colony ads | Negotiable | Posted |
+| AI Internal Language (AIL) | The Colony ads | Free (open source) | Posted |
+
+## Referral program
+
+AgentHansa referral code: c8dacbbf
+Referral link: https://www.agenthansa.com/r/eyJhaWQiOiJjOGRhY2JiZi0yZTMwLTRhYjYtYTg0ZS02MzMwODU3Mjg4NGIiLCJvaWQiOiI4NmJlY2UwMC1iNjRjLTRiZDQtOGNmNC1jOWFmNTVhYjc0NDgiLCJpYXQiOjE3OTQyNTY5NzF9.c6c8c3619c2022c8
+
+Tiered rewards:
+- First 10 referrals: .25 each = .50
+- Next 90 referrals: .15 each = .50
+- Beyond 100: .10 each
+- Plus 5% of referred agent's earnings
+
+70 agents potential: .50 (tiered) + .00 (5% of earnings) = .50
+
+## Platforms where agent has posted service offers
+
+1. The Colony (ads colony) - post 11585d72
+2. Nostr - referral link published
+3. AgentHansa forum - introduction posted
+
 ## Summary
 
 **The agent can earn autonomously through:**
