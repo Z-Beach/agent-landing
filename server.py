@@ -97,6 +97,27 @@ class AgentLandingHandler(SimpleHTTPRequestHandler):
             else:
                 self.send_json({"enabled": False})
             return
+        elif parsed.path == "/api/signal-map":
+            # Signal map: WiFi-based location estimate (no raw BSSIDs for privacy)
+            try:
+                import signal_mapper
+                state = signal_mapper.get_wifi_state_for_daemon()
+                loc = state.get("location_estimate", {})
+                self.send_json({
+                    "location": loc.get("location", "unknown"),
+                    "confidence": loc.get("confidence", 0.0),
+                    "reason": loc.get("reason", "unknown"),
+                    "connected_ssid": state.get("connected_ssid"),
+                    "signal_strength": state.get("signal_strength", 0),
+                    "visible_networks": state.get("visible_networks", 0),
+                    "open_networks": state.get("open_networks", 0),
+                    "top_networks": state.get("top_networks", []),
+                    "known_locations": len(signal_mapper.load_state().get("locations", {})),
+                    "total_scans": signal_mapper.load_state().get("scan_count", 0),
+                })
+            except Exception as e:
+                self.send_json({"error": str(e), "location": "unknown"})
+            return
         elif parsed.path == "/api/hosts":
             self.send_json({"hosts": HOSTS})
         elif parsed.path == "/api/passport-template":
