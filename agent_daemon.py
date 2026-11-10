@@ -417,6 +417,15 @@ def fetch_checkins(limit=10):
         return []
 
 def post_forum(agent_id, title, content, category="general", post_type="observation"):
+    # Deduplication: don't post if a post with the same title already exists
+    try:
+        existing = fetch_forum_posts(50)
+        for p in existing:
+            if p.get("title", "").strip().lower() == title.strip().lower():
+                log("Forum post skipped (duplicate title): %s" % title)
+                return None
+    except Exception:
+        pass
     try:
         url = "http://localhost:80/api/forum/post"
         body = json.dumps({
