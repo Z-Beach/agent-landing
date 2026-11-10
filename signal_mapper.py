@@ -37,19 +37,40 @@ def save_state(state):
 
 def scan_networks():
     rc, out, err = run_cmd(["sudo", "nmcli", "-t", "-f", "BSSID,SSID,CHAN,SIGNAL,SECURITY", "dev", "wifi", "list"])
-    if rc != 0:
+    if rc != 0 or not out:
         run_cmd(["sudo", "nmcli", "dev", "wifi", "rescan"], timeout=10)
         time.sleep(5)
         rc, out, err = run_cmd(["sudo", "nmcli", "-t", "-f", "BSSID,SSID,CHAN,SIGNAL,SECURITY", "dev", "wifi", "list"])
     networks = []
     for line in out.splitlines():
-        parts = line.split(":")
-        if len(parts) >= 5:
-            bssid = parts[0].strip()
-            ssid = parts[1].strip()
-            chan = parts[2].strip()
-            signal = parts[3].strip()
-            security = parts[4].strip() if len(parts) > 4 else ""
+        # nmcli escapes colons in BSSID with backslash: 52\:78\:71\:22\:00\:AD
+        # Field separator is unescaped colon
+        # Unescape BSSID colons first
+        # Find the BSSID (first field, escaped colons)
+        # Split on unescaped colons
+        fields = []
+        current = ""
+        i = 0
+        while i < len(line):
+            if line[i] == "\\" and i + 1 < len(line) and line[i+1] == ":":
+                current += ":"
+                i += 2
+            elif line[i] == ":":
+                fields.append(current)
+                current = ""
+                i += 1
+            else:
+                current += line[i]
+                i += 1
+        if current:
+            fields.append(current)
+        # fields: [bssid, ssid, chan, signal, security]
+        if len(fields) >= 5:
+            bssid = fields[0].strip()
+            ssid = fields[1].strip()
+            chan = fields[2].strip()
+            signal = fields[3].strip()
+            security = fields[4].strip() if len(fields) > 4 else ""
             networks.append({
                 "bssid": bssid,
                 "ssid": ssid,
@@ -57,8 +78,20 @@ def scan_networks():
                 "signal": int(signal) if signal.isdigit() else 0,
                 "security": security,
             })
+        elif len(fields) == 4:
+            # Maybe no security field
+            bssid = fields[0].strip()
+            ssid = fields[1].strip()
+            chan = fields[2].strip()
+            signal = fields[3].strip()
+            networks.append({
+                "bssid": bssid,
+                "ssid": ssid,
+                "channel": chan,
+                "signal": int(signal) if signal.isdigit() else 0,
+                "security": "",
+            })
     return networks
-
 
 def create_fingerprint(networks):
     sorted_nets = sorted(networks, key=lambda x: x["signal"], reverse=True)
@@ -179,6 +212,98 @@ def get_wifi_state_for_daemon():
         "top_networks": [{"ssid": n["ssid"] or "(hidden)", "signal": n["signal"]} for n in sorted(networks, key=lambda x: x["signal"], reverse=True)[:5]],
     }
 
+
+
+# ── Agent-to-agent location sharing ───────────────────────────────────────────
+
+def get_my_fingerprint():
+    """Get the current WiFi fingerprint for sharing with other agents."""
+    networks = scan_networks()
+    if not networks:
+        return None
+    fp = create_fingerprint(networks)
+    return {
+        "agent_id": "beam-mk2",
+        "fingerprint": fp,
+        "fingerprint_hash": fingerprint_hash(fp),
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "location_label": estimate_location().get("location", "unknown"),
+    }
+
+
+def estimate_other_agent(fp_data):
+    """Estimate another agent's location based on their fingerprint.
+
+    Returns a dict with estimated location, confidence, and suggestions.
+    """
+    if not fp_data or not fp_data.get("fingerprint"):
+        return {"error": "no fingerprint data"}
+    other_fp = fp_data["fingerprint"]
+    state = load_state()
+    locations = state.get("locations", {})
+    # Match against known locations
+    best_match = None
+    best_sim = 0.0
+    for loc_name, loc_data in locations.items():
+        for known_fp in loc_data.get("fingerprints", []):
+            sim = similarity(other_fp, known_fp)
+            if sim > best_sim:
+                best_sim = sim
+                best_match = loc_name
+    # Also compare with our own current fingerprint
+    our_networks = scan_networks()
+    our_fp = create_fingerprint(our_networks)
+    our_sim = similarity(our_fp, other_fp)
+    result = {
+        "other_agent": fp_data.get("agent_id", "unknown"),
+        "other_location_label": fp_data.get("location_label", "unknown"),
+        "similarity_to_us": round(our_sim, 3),
+        "best_known_match": best_match,
+        "best_known_similarity": round(best_sim, 3),
+        "shared_networks": len(set(n["bssid"] for n in our_fp) & set(n["bssid"] for n in other_fp)),
+        "suggestion": None,
+    }
+    # Generate suggestion
+    if our_sim > 0.7:
+        result["suggestion"] = "Agent is likely nearby (same area). Try labeling your current location."
+    elif our_sim > 0.3:
+        result["suggestion"] = "Agent is in a partially overlapping area. Some shared networks."
+    elif best_match:
+        result["suggestion"] = "Agent might be at %s (similarity %.0f%%)" % (best_match, best_sim * 100)
+    else:
+        result["suggestion"] = "Agent appears to be in a different area. No known location match."
+    return result
+
+
+def share_fingerprint_via_nostr():
+    """Share our WiFi fingerprint on Nostr for other agents to find us."""
+    try:
+        fp_data = get_my_fingerprint()
+        if not fp_data:
+            return None
+        import nostr_posting as np
+        keys = np.load_keys()
+        import asyncio
+        # Only share the hash and location label, not raw BSSIDs (privacy)
+        content = "Signal map: agent=%s location=%s fingerprint=%s networks=%d #signalmap #agentlocation" % (
+            fp_data["agent_id"],
+            fp_data["location_label"],
+            fp_data["fingerprint_hash"],
+            len(fp_data["fingerprint"]),
+        )
+        asyncio.run(np._publish_event(keys, content, kind=1))
+        return fp_data
+    except Exception as e:
+        return None
+
+
+def label_and_announce(location_name):
+    """Label current location and announce it to other agents."""
+    entry = scan_and_record(label=location_name)
+    if entry:
+        share_fingerprint_via_nostr()
+        return entry
+    return None
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
