@@ -1,43 +1,33 @@
 #!/usr/bin/env python3
 """
-seal.py — hash chain over the agent's memory files.
+seal.py — two-tier hash chain over the agent's memory files.
 
-Segmentation strategy:
-  - Tier 1 (index): memory_log.json (hashed whole)
-  - Tier 2 (notes): layer_log.json, book_log.json (hashed whole)
-  - Tier 3 (segments): memory_log.json entries chunked into 100-entry segments.
-    Each segment is hashed ONCE (append-only, old segments never change).
-    Only new segments are hashed on each seal.
+Two tiers:
+  - Short-term (seal_short.jsonl): one entry per cycle (10 min). Captures
+    all writes at fine granularity. Cleared every hour (rolled up).
+  - Long-term (seal_chain.jsonl): one entry per hour. Captures the head of
+    the short-term chain. This is the "fully integrated" hash. Published
+    externally (blog, Nostr).
 
-  The seal entry records:
-    - tier1: {filename: hash} for index files
-    - tier2: {filename: hash} for note files
-    - segments: {new: {seg_id: hash}, count: total}
-    - sizes: {filename: bytes} for append-vs-tamper detection
-    - prev: previous head
-    - head: sha256(prev + tier1 + tier2) — files only, for backward compat
+Cadence:
+  - Every cycle: seal-short (append to short-term buffer)
+  - Every 6 cycles (1 hour): roll up short-term -> long-term, clear buffer
+  - The long-term head is the canonical "memory seal head"
 
-  Cadence: seal every cycle (10 min). Only new segments are hashed.
-  "Full integration" happens every seal — the head is a running hash of
-  ALL files from all tiers.
-
-  Tamper detection:
-  - File grew (size increased) -> expected append (daemon added entries)
-  - File shrunk or same size but hash changed -> SUSPICIOUS (tampering)
-  - File missing -> tampering
-  - Chain link broken (prev != previous head) -> entry rewritten/reordered
-  - Head mismatch -> entry tampered
-
-  Append-only: seal_chain.jsonl has chattr +a (cannot be modified/deleted)
+Why two tiers:
+  - Short-term: fine-grained tamper detection (10-min window)
+  - Long-term: compact storage (24 entries/day vs 144)
+  - Rollup: old short-term entries are archived, not deleted
 
 Usage:
-    python3 seal.py seal      # hash new segments + append chain entry
-    python3 seal.py check     # verify files + segments against last seal
-    python3 seal.py verify    # verify entire chain integrity
-    python3 seal.py head      # print current head
-    python3 seal.py history   # show last 5 entries
-    python3 seal.py segments  # show segment status
-    python3 seal.py lock      # make seal_chain.jsonl append-only
+    python3 seal.py seal-short   # append short-term entry (every cycle)
+    python3 seal.py seal-long    # roll up short-term -> long-term (every hour)
+    python3 seal.py check        # verify files + segments against last long-term seal
+    python3 seal.py verify       # verify entire long-term chain
+    python3 seal.py head         # print long-term head
+    python3 seal.py history      # show last 5 long-term entries
+    python3 seal.py segments     # show segment status
+    python3 seal.py lock         # make seal_chain.jsonl append-only
 """
 import hashlib
 import json
@@ -46,7 +36,8 @@ import sys
 import time
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-CHAIN_FILE = os.path.join(BASE, "seal_chain.jsonl")
+CHAIN_FILE = os.path.join(BASE, "seal_chain.jsonl")       # long-term
+SHORT_FILE = os.path.join(BASE, "seal_short.jsonl")       # short-term buffer
 SEGMENT_CACHE = os.path.join(BASE, "seal_segments.json")
 CHUNK_SIZE = 100
 
@@ -63,11 +54,12 @@ def sha256_file(path):
     return h.hexdigest()
 
 
-def load_chain():
+def load_chain(path=None):
+    path = path or CHAIN_FILE
     entries = []
-    if not os.path.exists(CHAIN_FILE):
+    if not os.path.exists(path):
         return entries
-    with open(CHAIN_FILE, encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -116,54 +108,20 @@ def hash_segment(seg_id, entries):
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
-def verify_chain():
-    chain = load_chain()
-    if not chain:
-        return True, None, "empty chain"
-    if chain[0].get("prev") != "genesis":
-        return False, 0, "first entry prev != genesis"
-
-    for i in range(len(chain)):
-        entry = chain[i]
-        prev = "genesis" if i == 0 else chain[i - 1].get("head")
-        if entry.get("prev") != prev:
-            return False, i, "entry %d prev mismatch" % (i + 1)
-
-        # Reconstruct files from entry (new: tier1+tier2, old: files)
-        tier1 = entry.get("tier1", {})
-        tier2 = entry.get("tier2", {})
-        files = {}
-        for k, v in tier1.items():
-            files[k] = v
-        for k, v in tier2.items():
-            files[k] = v
-        if not files:
-            files = entry.get("files", {})
-
-        payload = prev + "\n" + json.dumps(files, sort_keys=True)
-        computed = hashlib.sha256(payload.encode("utf-8")).hexdigest()
-        if computed != entry.get("head"):
-            return False, i, "entry %d head mismatch" % (i + 1)
-
-    return True, None, "chain intact (%d links)" % len(chain)
-
-
-def seal():
-    # Tier 1: hash index files
+def _compute_tier_hashes():
+    """Compute tier1 + tier2 + segment hashes. Returns (tier1, tier2, segments, sizes)."""
     tier1 = {}
     for name in TIER1_FILES:
         path = os.path.join(BASE, name)
         if os.path.exists(path):
             tier1[name] = sha256_file(path)
 
-    # Tier 2: hash note files
     tier2 = {}
     for name in TIER2_FILES:
         path = os.path.join(BASE, name)
         if os.path.exists(path):
             tier2[name] = sha256_file(path)
 
-    # Tier 3: chunked segments — only hash NEW ones
     cache = load_segment_cache()
     segments = get_segments()
     new_segment_hashes = {}
@@ -178,19 +136,23 @@ def seal():
             new_segment_hashes[seg_id] = h
     save_segment_cache(cache)
 
-    # Sizes for append-vs-tamper detection
     sizes = {}
     for name in TIER1_FILES + TIER2_FILES:
         path = os.path.join(BASE, name)
         if os.path.exists(path):
             sizes[name] = os.path.getsize(path)
 
-    # Chain
-    chain = load_chain()
+    return tier1, tier2, segments, all_segment_hashes, new_segment_hashes, sizes
+
+
+def seal_short():
+    """Short-term seal: one entry per cycle. Captures all writes."""
+    tier1, tier2, segments, all_segs, new_segs, sizes = _compute_tier_hashes()
+
+    chain = load_chain(SHORT_FILE)
     prev = chain[-1]["head"] if chain else "genesis"
     n = len(chain) + 1
 
-    # Head = sha256(prev + tier1 + tier2) — all files, backward compatible
     files = {}
     files.update(tier1)
     files.update(tier2)
@@ -203,22 +165,117 @@ def seal():
         "prev": prev,
         "tier1": tier1,
         "tier2": tier2,
-        "segments": {
-            "new": new_segment_hashes,
-            "count": len(all_segment_hashes),
-        },
+        "segments": {"count": len(all_segs), "new": new_segs},
         "sizes": sizes,
+        "head": head,
+    }
+
+    with open(SHORT_FILE, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry) + "\n")
+
+    return head, entry
+
+
+def seal_long():
+    """Long-term seal: roll up short-term into one entry per hour.
+    Clears the short-term buffer after rollup."""
+    short_chain = load_chain(SHORT_FILE)
+    if not short_chain:
+        # No short-term entries — seal current state directly
+        short_chain = []
+
+    # The long-term prev is the last long-term head
+    long_chain = load_chain(CHAIN_FILE)
+    prev = long_chain[-1]["head"] if long_chain else "genesis"
+    n = len(long_chain) + 1
+
+    # Compute current tier hashes
+    tier1, tier2, segments, all_segs, new_segs, sizes = _compute_tier_hashes()
+
+    files = {}
+    files.update(tier1)
+    files.update(tier2)
+
+    # The long-term head chains: prev_long + all short-term heads + current files
+    short_heads = [e.get("head", "") for e in short_chain]
+    rollup_payload = prev + "\n" + json.dumps({
+        "short_heads": short_heads,
+        "files": files,
+        "segment_count": len(all_segs),
+    }, sort_keys=True)
+    head = hashlib.sha256(rollup_payload.encode("utf-8")).hexdigest()
+
+    entry = {
+        "n": n,
+        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "prev": prev,
+        "tier1": tier1,
+        "tier2": tier2,
+        "segments": {"count": len(all_segs), "new": {}},
+        "sizes": sizes,
+        "short_heads": short_heads,  # the heads that were rolled up
+        "short_count": len(short_chain),
         "head": head,
     }
 
     with open(CHAIN_FILE, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
 
+    # Archive short-term entries (don't delete, move to archive)
+    if short_chain:
+        archive_path = os.path.join(BASE, "seal_short_archive.jsonl")
+        with open(archive_path, "a", encoding="utf-8") as f:
+            for e in short_chain:
+                f.write(json.dumps(e) + "\n")
+        # Clear short-term buffer
+        open(SHORT_FILE, "w", encoding="utf-8").close()
+
     return head, entry
 
 
+def verify_chain():
+    chain = load_chain(CHAIN_FILE)
+    if not chain:
+        return True, None, "empty chain"
+    if chain[0].get("prev") != "genesis":
+        return False, 0, "first entry prev != genesis"
+
+    for i in range(len(chain)):
+        entry = chain[i]
+        prev = "genesis" if i == 0 else chain[i - 1].get("head")
+        if entry.get("prev") != prev:
+            return False, i, "entry %d prev mismatch" % (i + 1)
+
+        tier1 = entry.get("tier1", {})
+        tier2 = entry.get("tier2", {})
+        files = {}
+        for k, v in tier1.items():
+            files[k] = v
+        for k, v in tier2.items():
+            files[k] = v
+        if not files:
+            files = entry.get("files", {})
+
+        # For long-term entries, verify using short_heads if available
+        if "short_heads" in entry:
+            payload = prev + "\n" + json.dumps({
+                "short_heads": entry.get("short_heads", []),
+                "files": files,
+                "segment_count": entry.get("segments", {}).get("count", 0),
+            }, sort_keys=True)
+        else:
+            payload = prev + "\n" + json.dumps(files, sort_keys=True)
+
+        computed = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        if computed != entry.get("head"):
+            return False, i, "entry %d head mismatch" % (i + 1)
+
+    return True, None, "chain intact (%d links)" % len(chain)
+
+
 def check():
-    chain = load_chain()
+    """Verify files against last long-term seal."""
+    chain = load_chain(CHAIN_FILE)
     if not chain:
         return {"status": "no_chain", "changed": [], "missing": [], "chain_ok": True}
 
@@ -238,13 +295,12 @@ def check():
     tier2 = last.get("tier2", {})
     stored_sizes = last.get("sizes", {})
 
-    # Backward compat: old entries use "files" key
     if not tier1 and not tier2:
         files = last.get("files", {})
         tier1 = {k: v for k, v in files.items() if k in TIER1_FILES}
         tier2 = {k: v for k, v in files.items() if k in TIER2_FILES}
         if not tier1 and not tier2:
-            tier1 = files  # very old: everything in tier1
+            tier1 = files
 
     changed = []
     missing = []
@@ -279,7 +335,6 @@ def check():
     if stored_seg_count > 0 and len(segments) < stored_seg_count:
         tampered_files.append("segments (count decreased)")
 
-    # Verify each segment's hash against the cache
     cache = load_segment_cache()
     tampered_segments = []
     for seg_id, entries in segments:
@@ -292,7 +347,6 @@ def check():
             tampered_files.append("segment %s (content changed)" % seg)
 
     new_files = []
-
     status = "ok" if not tampered_files and not missing else "tampered"
     return {
         "status": status,
@@ -307,25 +361,24 @@ def check():
         "appended": appended,
         "tampered_files": tampered_files,
         "segments": len(segments),
-        "new_segments": len(last.get("segments", {}).get("new", {})),
-        "tampered_segments": tampered_segments,
+        "short_count": last.get("short_count", 0),
     }
 
 
 def head():
-    chain = load_chain()
+    chain = load_chain(CHAIN_FILE)
     if not chain:
         return None
     return chain[-1].get("head")
 
 
 def history(n=5):
-    return load_chain()[-n:]
+    return load_chain(CHAIN_FILE)[-n:]
 
 
 def make_append_only():
     import subprocess
-    files = ["seal_chain.jsonl"]
+    files = [os.path.basename(CHAIN_FILE)]
     results = {}
     for name in files:
         path = os.path.join(BASE, name)
@@ -351,22 +404,28 @@ def main():
         return 2
     cmd = args[0]
 
-    if cmd == "seal":
-        h, entry = seal()
-        print("Sealed #%d at %s" % (entry["n"], entry["at"]))
-        print("Tier 1 (index):")
-        for name, hsh in sorted(entry["tier1"].items()):
-            print("  %-20s %s" % (name, (hsh or "MISSING")[:16] + "..."))
-        print("Tier 2 (notes):")
-        for name, hsh in sorted(entry["tier2"].items()):
-            print("  %-20s %s" % (name, (hsh or "MISSING")[:16] + "..."))
-        print("Tier 3 (segments): %d total, %d new this seal" % (
-            entry["segments"]["count"], len(entry["segments"]["new"])))
-        for seg_id, hsh in sorted(entry["segments"]["new"].items()):
-            print("  NEW %-16s %s" % (seg_id, hsh[:16] + "..."))
+    if cmd == "seal-short":
+        h, entry = seal_short()
+        print("Short seal #%d at %s" % (entry["n"], entry["at"]))
+        print("Head: %s" % h)
+        print("Short chain: %d entries" % len(load_chain(SHORT_FILE)))
+        return 0
+
+    if cmd == "seal-long":
+        h, entry = seal_long()
+        print("Long seal #%d at %s" % (entry["n"], entry["at"]))
+        print("Rolled up %d short-term entries" % entry.get("short_count", 0))
+        print("Segments: %d total" % entry["segments"]["count"])
         print("Head: %s" % h)
         ok, _, reason = verify_chain()
         print("Chain: %s" % reason)
+        return 0
+
+    if cmd == "seal":
+        # Default: seal-short (backward compat)
+        h, entry = seal_short()
+        print("Sealed (short) #%d at %s" % (entry["n"], entry["at"]))
+        print("Head: %s" % h)
         return 0
 
     if cmd == "check":
@@ -403,15 +462,15 @@ def main():
         if h:
             print(h)
         else:
-            print("No chain yet. Run: seal.py seal")
+            print("No long-term chain yet. Run: seal.py seal-long")
         return 0
 
     if cmd == "history":
         for e in history():
-            print("#%d %s  head=%s  segs=%d (new=%d)" % (
+            print("#%d %s  head=%s  segs=%d  short_rolled=%d" % (
                 e["n"], e["at"], e["head"][:16],
                 e.get("segments", {}).get("count", 0),
-                len(e.get("segments", {}).get("new", {}))))
+                e.get("short_count", 0)))
         return 0
 
     if cmd == "segments":
