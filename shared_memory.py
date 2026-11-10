@@ -250,53 +250,13 @@ def get_combined_context(limit=20):
     return "\n".join(lines)
 
 def trim_memory_log(keep_last=200):
-    """Trim memory log to last N entries. Archive old ones."""
-    try:
-        data = load_log(MEMORY_LOG)
-        entries = data["entries"]
-        if len(entries) <= keep_last:
-            return 0
-        archived = entries[:-keep_last]
-        archive_path = os.path.join(STATE_DIR, "memory_log_archive.json")
-        try:
-            with open(archive_path) as f:
-                archive = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            archive = {"entries": [], "next_id": 1}
-        archive["entries"].extend(archived)
-        with open(archive_path, "w") as f:
-            json.dump(archive, f, indent=2)
-        data["entries"] = entries[-keep_last:]
-        data["next_id"] = len(data["entries"]) + 1
-        save_log(data, MEMORY_LOG)
-        return len(archived)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return 0
-
+    """DISABLED: trimming deletes history. History is append-only.
+    Returns 0 (no entries trimmed)."""
+    return 0
 def trim_layer_log(keep_last=100):
-    """Trim layer notes to last N entries. Archive old ones."""
-    try:
-        data = load_log(LAYER_LOG)
-        entries = data["entries"]
-        if len(entries) <= keep_last:
-            return 0
-        archived = entries[:-keep_last]
-        archive_path = os.path.join(STATE_DIR, "layer_log_archive.json")
-        try:
-            with open(archive_path) as f:
-                archive = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            archive = {"entries": [], "next_id": 1}
-        archive["entries"].extend(archived)
-        with open(archive_path, "w") as f:
-            json.dump(archive, f, indent=2)
-        data["entries"] = entries[-keep_last:]
-        data["next_id"] = len(data["entries"]) + 1
-        save_log(data, LAYER_LOG)
-        return len(archived)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return 0
-
+    """DISABLED: trimming deletes history. History is append-only.
+    Returns 0 (no entries trimmed)."""
+    return 0
 def duplicate_at_divergence():
     """At the point of divergence, duplicate the logs.
     

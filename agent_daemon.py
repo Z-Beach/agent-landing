@@ -1091,8 +1091,6 @@ def run_cycle(cfg):
     execute_action(cfg, action, data)
 
     log(f"=== Cycle complete ===")
-    # Seal memory AFTER all writes (LLM decisions, quests, etc.) are done
-    seal_memory()
     # Write a layer note (daemon's own perspective on the cycle)
     try:
         import shared_memory
@@ -1104,6 +1102,8 @@ def run_cycle(cfg):
         )
     except Exception:
         pass
+    # Seal memory AFTER all writes (LLM decisions, layer notes, quests, etc.) are done
+    seal_memory()
 
 
 
