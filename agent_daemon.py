@@ -1727,15 +1727,14 @@ def check_watch_targets():
 # one. The head is published to the blog as an external anchor (xiaoye pattern).
 
 def check_seal():
-    """Verify memory files against last long-term seal. Alert if tampered."""
+    """Verify memory files against last seal. Alert if tampered."""
     try:
         import seal as sl
         result = sl.check()
         if result.get("status") == "tampered":
-            changed = [c["file"] for c in result.get("changed", [])] if isinstance(result.get("changed"), list) else []
             files = result.get("tampered_files", [])
-            log("SEAL TAMPERED (external change detected): %s" % ", ".join(files or changed or ["unknown"]))
-            write_memory_entry("beam-mk2", "error", "Memory seal tampered: %s" % ", ".join(files or changed or ["unknown"]))
+            log("SEAL TAMPERED (external change detected): %s" % ", ".join(files or ["unknown"]))
+            write_memory_entry("beam-mk2", "error", "Memory seal tampered: %s" % ", ".join(files or ["unknown"]))
         elif result.get("status") == "chain_broken":
             log("SEAL CHAIN BROKEN: %s" % result.get("reason"))
             write_memory_entry("beam-mk2", "error", "Memory seal chain broken: %s" % result.get("reason"))
@@ -1744,38 +1743,31 @@ def check_seal():
 
 
 def seal_memory():
-    """Two-tier seal: short-term every cycle, long-term rollup every 6 cycles.
-    Never raises."""
+    """5-tier seal: auto-detects which tier to roll up. Never raises."""
     try:
         import seal as sl
-        # Short-term: capture this cycle's state
-        short_head, short_entry = sl.seal_short()
-        log("Short seal #%d: %s" % (short_entry["n"], short_head[:16]))
-
-        # Check if it's time to roll up (every 6 cycles = ~1 hour)
-        short_chain = sl.load_chain(sl.SHORT_FILE)
-        if len(short_chain) >= 6:
-            long_head, long_entry = sl.seal_long()
-            log("Long seal #%d: rolled up %d short-term entries -> %s" % (
-                long_entry["n"], long_entry.get("short_count", 0), long_head[:16]))
-            # Publish the long-term head to the blog (external anchor)
+        head_val, entry, rolled = sl.seal_auto()
+        log("Seal (Tier 0): %s" % head_val[:16])
+        for src_tier, dst_tier, count in rolled:
+            log("  Rolled up Tier %d -> Tier %d (%d entries)" % (src_tier, dst_tier, count))
+            # Publish the highest-tier head to the blog (external anchor)
             try:
                 import email_posting as ep
-                ep.create_blog_post(
-                    "beam-mk2",
-                    "Memory seal: %s" % time.strftime("%Y-%m-%d %H:00", time.gmtime()),
-                    "Memory seal head (long-term): %s\n"
-                    "Rolled up %d short-term entries.\n"
-                    "Chain: %d links.\n"
-                    "Segments: %d total." % (
-                        long_head, long_entry.get("short_count", 0),
-                        long_entry["n"], long_entry["segments"]["count"]),
-                    tags=["seal", "memory", "integrity"],
-                )
+                canonical = sl.head()
+                if canonical:
+                    ep.create_blog_post(
+                        "beam-mk2",
+                        "Memory seal: %s" % time.strftime("%Y-%m-%d", time.gmtime()),
+                        "Memory seal head (canonical): %s\n"
+                        "Rolled up Tier %d -> Tier %d (%d entries).\n"
+                        "Storage: ~%d entries across all tiers." % (
+                            canonical, src_tier, dst_tier, count,
+                            sum(len(sl.load_chain(sl.TIER_FILES[t])) for t in range(5))),
+                        tags=["seal", "memory", "integrity"],
+                    )
             except Exception:
                 pass
-            return long_head
-        return short_head
+        return head_val
     except Exception as e:
         log("Seal error: %s" % e)
         return None
