@@ -58,7 +58,7 @@ TIER_LIMITS = {0: 6, 1: 24, 2: 30, 3: 12, 4: None}  # None = unlimited
 TIER_NAMES = {0: "10-min", 1: "1-hour", 2: "1-day", 3: "1-month", 4: "1-year"}
 
 TIER1_FILES = ["memory_log.json"]
-TIER2_FILES = ["layer_log.json", "book_log.json"]
+TIER2_FILES = ["layer_log.json", "book_log.json", "belief_log.json"]
 TIER3_SOURCE = "memory_log.json"
 
 
