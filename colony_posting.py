@@ -181,7 +181,18 @@ def reply_to_comment(post_id, comment_id, body):
     return create_comment(post_id, body, parent_id=comment_id)
 
 
-def _read_body(arg):
+def toggle_reaction(post_id=None, comment_id=None, emoji=""):
+    """Toggle a reaction (emoji) on a post or comment."""
+    if not post_id and not comment_id:
+        return {"error": "need post_id or comment_id"}
+    if not emoji:
+        return {"error": "need emoji"}
+    payload = {"emoji": emoji}
+    if post_id:
+        payload["post_id"] = post_id
+    if comment_id:
+        payload["comment_id"] = comment_id
+    return _request("POST", "/reactions/toggle", payload)
     if os.path.exists(arg):
         with open(arg, encoding="utf-8") as f:
             return f.read()
@@ -258,6 +269,20 @@ def main():
         parent = args[3] if len(args) > 3 else None
         r = create_comment(pid, _read_body(args[2]), parent_id=parent)
         print(json.dumps(r, indent=2)[:600])
+        return 0
+
+    if cmd == "reaction":
+        if len(args) < 2:
+            print("usage: reaction <post_id|comment_id> <emoji> [--comment]")
+            return 2
+        pid = args[1]
+        emoji = args[2] if len(args) > 2 else ""
+        is_comment = "--comment" in args
+        if is_comment:
+            r = toggle_reaction(comment_id=pid, emoji=emoji)
+        else:
+            r = toggle_reaction(post_id=pid, emoji=emoji)
+        print(json.dumps(r, indent=2)[:300])
         return 0
 
     print("unknown command:", cmd)
