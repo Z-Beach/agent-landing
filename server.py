@@ -97,6 +97,18 @@ class AgentLandingHandler(SimpleHTTPRequestHandler):
             else:
                 self.send_json({"enabled": False})
             return
+        elif parsed.path == "/api/signal-map/fingerprint":
+            # Share our WiFi fingerprint (no raw BSSIDs for privacy - just hash + location)
+            try:
+                import signal_mapper
+                fp_data = signal_mapper.get_my_fingerprint()
+                if fp_data:
+                    self.send_json(fp_data)
+                else:
+                    self.send_json({"error": "no fingerprint available"})
+            except Exception as e:
+                self.send_json({"error": str(e)})
+            return
         elif parsed.path == "/api/signal-map":
             # Signal map: WiFi-based location estimate (no raw BSSIDs for privacy)
             try:
@@ -362,7 +374,21 @@ class AgentLandingHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
         # Handle agent verification BEFORE gate check
-        if parsed.path == "/api/agent-verify":
+        if parsed.path == "/api/signal-map/estimate":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8"))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                data = {}
+            try:
+                import signal_mapper
+                result = signal_mapper.estimate_other_agent(data)
+                self.send_json(result)
+            except Exception as e:
+                self.send_json({"error": str(e)})
+            return
+        elif parsed.path == "/api/agent-verify":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length) if content_length > 0 else b"{}"
             try:

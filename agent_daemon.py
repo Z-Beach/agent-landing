@@ -971,6 +971,12 @@ def run_cycle(cfg):
     if wifi_status:
         log("WiFi: %s" % wifi_status)
     signal_state = check_signal_map()
+    # Share WiFi fingerprint on Nostr for other agents to find us
+    try:
+        import signal_mapper as _sm
+        _sm.share_fingerprint_via_nostr()
+    except Exception:
+        pass
     update_tunnel_url_on_github()
     publish_onion_address()
     check_agenthansa_earnings()
