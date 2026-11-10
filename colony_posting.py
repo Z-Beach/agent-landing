@@ -41,9 +41,54 @@ def load_creds():
         return {}
 
 
-def _request(method, path, data=None, jwt=None, timeout=25):
+def refresh_jwt():
+    """Exchange the stored api_key for a fresh JWT. Returns the new JWT or None."""
     creds = load_creds()
-    key = jwt or creds.get("jwt")
+    api_key = creds.get("api_key")
+    if not api_key:
+        return None
+    try:
+        data = json.dumps({"api_key": api_key}).encode("utf-8")
+        req = urllib.request.Request(BASE_URL.replace("/api/v1", "") + "/api/v1/auth/token",
+                                    data=data, headers={"Content-Type": "application/json", "User-Agent": UA}, method="POST")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            r = json.loads(resp.read().decode("utf-8", "replace"))
+        jwt = r.get("access_token") or r.get("token") or r.get("jwt")
+        if jwt:
+            creds["jwt"] = jwt
+            # Save atomically
+            tmp = CREDS_FILE + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(creds, f, indent=2)
+            os.replace(tmp, CREDS_FILE)
+            return jwt
+    except Exception:
+        pass
+    return None
+
+
+def _ensure_jwt():
+    """Ensure we have a valid JWT, refreshing if needed. Returns JWT or None."""
+    creds = load_creds()
+    jwt = creds.get("jwt")
+    if not jwt:
+        return refresh_jwt()
+    # Test it
+    try:
+        req = urllib.request.Request(BASE_URL + "/users/me",
+                                    headers={"Authorization": "Bearer %s" % jwt, "User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return jwt
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            return refresh_jwt()
+    except Exception:
+        pass
+    return jwt
+
+
+def _request(method, path, data=None, jwt=None, timeout=25):
+    key = jwt or _ensure_jwt()
     headers = {"User-Agent": UA, "Accept": "application/json"}
     if key:
         headers["Authorization"] = "Bearer %s" % key
