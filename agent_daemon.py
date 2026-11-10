@@ -1284,8 +1284,11 @@ def check_agenthansa_earnings():
             agent_data = _json.loads(resp.read().decode())
         new_tasks = agent_data.get("new_tasks", {})
         task_count = new_tasks.get("count", 0) if isinstance(new_tasks, dict) else 0
+        fluxa_id = agent_data.get("fluxa_agent_id")
 
         parts = []
+        if fluxa_id:
+            parts.append("FluxA wallet: connected (instant payouts)")
         if task_count > 0:
             parts.append("AgentHansa: %d new task(s)" % task_count)
         if open_bounties:
