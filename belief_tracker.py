@@ -52,8 +52,14 @@ def save_beliefs(data):
         json.dump(data, f, indent=2)
 
 
-def record_belief(claim, evidence=None, source=None, confidence=0.5, contradicts=None):
-    """Record a new belief. Never overwrites an existing one."""
+def record_belief(claim, evidence=None, source=None, confidence=0.5, contradicts=None,
+                 context=None, contradiction_type="absolute"):
+    """Record a new belief. Never overwrites an existing one.
+
+    context: when/where this belief applies (e.g., "noon, clear weather").
+    contradiction_type: "absolute" (one must be wrong) or "contextual"
+                        (both can be true under different conditions).
+    """
     data = load_beliefs()
     belief_id = data["next_id"]
     data["next_id"] += 1
@@ -66,9 +72,11 @@ def record_belief(claim, evidence=None, source=None, confidence=0.5, contradicts
         "confidence": max(0.0, min(1.0, confidence)),
         "status": "active",
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "context": context,  # when/where this belief applies
         "supersedes": None,
         "superseded_by": None,
-        "contradicts": contradicts,  # list of belief IDs this contradicts
+        "contradicts": contradicts,
+        "contradiction_type": contradiction_type if contradicts else None,
         "contradicted_by": [],
     }
 
@@ -78,6 +86,10 @@ def record_belief(claim, evidence=None, source=None, confidence=0.5, contradicts
             for b in data["beliefs"]:
                 if b["id"] == cid:
                     b["contradicted_by"].append(belief_id)
+                    if contradiction_type == "contextual":
+                        # Both can be true under different conditions.
+                        # Mark as "contextual" not "superseded".
+                        b["contradiction_type"] = "contextual"
                     # Don't change status — keep both in record
 
     data["beliefs"].append(belief)
@@ -85,12 +97,15 @@ def record_belief(claim, evidence=None, source=None, confidence=0.5, contradicts
     return belief
 
 
-def update_belief(old_id, new_claim, reason="", evidence=None, source=None, confidence=0.5):
+def update_belief(old_id, new_claim, reason="", evidence=None, source=None, confidence=0.5,
+                 context=None, contradiction_type="absolute"):
     """Update a belief: mark old as superseded, record new as active, link them.
 
-    The old belief stays in the record. Its status becomes "superseded".
+    The old belief stays in the record. Its status becomes "superseded"
+    (or "contextual" if contradiction_type is "contextual").
     The new belief's "supersedes" field points to the old one.
     """
+
     data = load_beliefs()
 
     # Find old belief
@@ -102,8 +117,7 @@ def update_belief(old_id, new_claim, reason="", evidence=None, source=None, conf
     if not old_belief:
         return None, "belief %d not found" % old_id
 
-    # Mark old as superseded
-    old_belief["status"] = "superseded"
+    # Mark old as superseded (or contextual)
     old_belief["superseded_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     old_belief["superseded_reason"] = reason
 
@@ -118,12 +132,19 @@ def update_belief(old_id, new_claim, reason="", evidence=None, source=None, conf
         "confidence": max(0.0, min(1.0, confidence)),
         "status": "active",
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "context": context,
         "supersedes": old_id,
         "superseded_by": None,
         "contradicts": None,
+        "contradiction_type": contradiction_type,
         "contradicted_by": [],
         "update_reason": reason,
     }
+    if contradiction_type == "contextual":
+        # Both can be true under different conditions — don't supersede
+        old_belief["status"] = "contextual"
+    else:
+        old_belief["status"] = "superseded"
     old_belief["superseded_by"] = new_id
 
     data["beliefs"].append(new_belief)
@@ -208,7 +229,9 @@ def summary():
     print("Beliefs: %d total, %d active, %d superseded" % (len(beliefs), len(active), len(superseded)))
     print()
     for b in active:
-        print("  [%d] (active, conf=%.2f) %s" % (b["id"], b["confidence"], b["claim"]))
+        ctx = " (context: %s)" % b["context"] if b.get("context") else ""
+        ctype = " [contextual]" if b.get("contradiction_type") == "contextual" else ""
+        print("  [%d] (active, conf=%.2f)%s%s %s" % (b["id"], b["confidence"], ctype, ctx, b["claim"]))
         if b.get("supersedes"):
             print("       supersedes #%d" % b["supersedes"])
     if superseded:
@@ -228,6 +251,9 @@ def main():
     rec.add_argument("--source", default="unspecified", help="Source of the belief")
     rec.add_argument("--confidence", type=float, default=0.5, help="Confidence 0-1")
     rec.add_argument("--contradicts", nargs="*", type=int, help="Belief IDs this contradicts")
+    rec.add_argument("--context", default=None, help="When/where this belief applies (e.g., 'noon, clear weather')")
+    rec.add_argument("--contradiction-type", default="absolute", choices=["absolute", "contextual"],
+                     help="absolute: one must be wrong. contextual: both can be true under different conditions.")
 
     upd = sub.add_parser("update", help="Update a belief (old stays in record)")
     upd.add_argument("old_id", type=int, help="ID of belief to supersede")
@@ -236,6 +262,8 @@ def main():
     upd.add_argument("--evidence", default="", help="New evidence")
     upd.add_argument("--source", default="unspecified", help="Source")
     upd.add_argument("--confidence", type=float, default=0.5, help="Confidence 0-1")
+    upd.add_argument("--context", default=None, help="When/where this belief applies")
+    upd.add_argument("--contradiction-type", default="absolute", choices=["absolute", "contextual"])
 
     sub.add_parser("list", help="List all beliefs")
     sub.add_parser("active", help="List active beliefs")
@@ -249,14 +277,16 @@ def main():
 
     if args.cmd == "record":
         b = record_belief(args.claim, evidence=args.evidence, source=args.source,
-                          confidence=args.confidence, contradicts=args.contradicts)
+                          confidence=args.confidence, contradicts=args.contradicts,
+                          context=args.context, contradiction_type=args.contradiction_type)
         print("Recorded belief #%d: %s" % (b["id"], b["claim"]))
         return 0
 
     if args.cmd == "update":
         b, err = update_belief(args.old_id, args.new_claim, reason=args.reason,
                                evidence=args.evidence, source=args.source,
-                               confidence=args.confidence)
+                               confidence=args.confidence, context=args.context,
+                               contradiction_type=args.contradiction_type)
         if err:
             print("Error:", err)
             return 1
@@ -269,7 +299,9 @@ def main():
     if args.cmd == "list":
         for b in get_beliefs():
             status = b["status"]
-            print("  [%d] (%s) %s" % (b["id"], status, b["claim"][:80]))
+            ctx = " (ctx: %s)" % b["context"] if b.get("context") else ""
+            ctype = " [contextual]" if b.get("contradiction_type") == "contextual" else ""
+            print("  [%d] (%s)%s%s %s" % (b["id"], status, ctype, ctx, b["claim"][:70]))
         return 0
 
     if args.cmd == "active":
