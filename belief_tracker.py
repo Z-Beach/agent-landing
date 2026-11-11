@@ -67,8 +67,18 @@ def record_belief(claim, evidence=None, source=None, confidence=0.5, contradicts
     # Safety check: does this claim contain safety-relevant keywords?
     safety_keywords = ["fire", "smoke", "explosion", "toxic", "chemical", "spill",
                        "danger", "emergency", "evacuate", "poison", "gas leak",
-                       "radiation", "contamination", "hazard", "unsafe"]
+                       "radiation", "contamination", "hazard", "unsafe", "orange sky",
+                       "ash", "haze"]
     safety_flag = any(kw in claim.lower() for kw in safety_keywords)
+
+    # Severity scale (not binary):
+    #   info     — normal observation, no action needed (e.g., seasonal smoke far away)
+    #   watch    — worth monitoring, check again next cycle
+    #   warning  — nearby or worsening, user should be aware
+    #   alert    — close or dangerous, user should take action
+    #   critical — immediate threat, evacuation or emergency
+    # Default to "watch" for safety-flagged claims, "info" otherwise
+    default_severity = "watch" if safety_flag else "info"
 
     belief = {
         "id": belief_id,
@@ -88,7 +98,11 @@ def record_belief(claim, evidence=None, source=None, confidence=0.5, contradicts
         "verified_at": None,
         "verification_result": None,
         "safety_flag": safety_flag,
+        "severity": default_severity,
+        "location_context": None,  # user's region (e.g., "Los Angeles, CA")
+        "investigation": None,     # what was found during investigation
         "investigated": False,
+        "response_taken": None,   # what the agent did about it
     }
 
     # If this belief contradicts existing ones, link them
@@ -181,35 +195,115 @@ def get_belief(belief_id):
     return None
 
 
-def verify_belief(belief_id, search_results=None):
-    """Mark a belief as verified or disputed based on investigation.
+def investigate_safety(belief_id, search_results=None, location_context=None):
+    """Investigate a safety-relevant belief. Determine severity and response.
 
-    search_results: list of strings from web search or other verification.
-    If search_results contains supporting evidence, status becomes "verified".
-    If search_results contains contradicting evidence, status becomes "disputed".
-    If no search_results, status becomes "investigated" (manual review).
+    search_results: list of strings from web search.
+    location_context: user's region (e.g., "Los Angeles, CA").
+
+    Severity scale:
+      info     — normal observation, no action needed
+      watch    — worth monitoring, check again next cycle
+      warning  — nearby or worsening, user should be aware
+      alert    — close or dangerous, user should take action
+      critical — immediate threat, evacuation or emergency
+
+    Returns the belief with updated investigation, severity, and response.
     """
     data = load_beliefs()
     for b in data["beliefs"]:
         if b["id"] == belief_id:
             b["investigated"] = True
             b["verified_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            if location_context:
+                b["location_context"] = location_context
+
             if search_results:
-                # Check if any result supports or contradicts
-                claim_lower = b["claim"].lower()
-                supporting = any(claim_lower.split()[0] in r.lower() for r in search_results if r)
-                if supporting:
-                    b["verification_status"] = "verified"
-                    b["verification_result"] = "supported by search results"
-                else:
-                    b["verification_status"] = "disputed"
-                    b["verification_result"] = "not supported by search results"
+                # Assess severity based on search results
+                results_text = " ".join(search_results).lower()
+                investigation = {
+                    "search_results": [r[:200] for r in search_results[:5]],
+                    "source_found": None,
+                    "distance": None,
+                    "containment": None,
+                    "air_quality": None,
+                    "evacuation": None,
+                }
+
+                # Look for fire/smoke source info
+                for r in search_results:
+                    rl = r.lower()
+                    if "fire" in rl or "wildfire" in rl or "blaze" in rl:
+                        investigation["source_found"] = r[:150]
+                    if "evacuat" in rl:
+                        investigation["evacuation"] = r[:150]
+                    if "aqi" in rl or "air quality" in rl:
+                        investigation["air_quality"] = r[:150]
+                    if "contain" in rl:
+                        investigation["containment"] = r[:150]
+
+                # Determine severity
+                severity = "info"
+                if b.get("safety_flag"):
+                    severity = "watch"  # default for safety-flagged
+                # Escalate based on search results
+                if investigation["evacuation"]:
+                    severity = "critical"
+                elif "nearby" in results_text or "close" in results_text:
+                    severity = "warning"
+                elif investigation["source_found"] and "contain" not in results_text:
+                    severity = "watch"
+                # De-escalate if source is far away or well-contained
+                if "miles away" in results_text or "contained" in results_text or "distant" in results_text:
+                    severity = "info"
+
+                b["severity"] = severity
+                b["investigation"] = investigation
+                b["verification_status"] = "investigated"
+                b["verification_result"] = "severity=%s, source=%s" % (
+                    severity, investigation["source_found"] or "not found")
+
+                # Determine response
+                responses = {
+                    "info": "Logged. No action needed. Seasonal or distant event.",
+                    "watch": "Monitoring. Will re-check next cycle.",
+                    "warning": "User should be aware. Smoke/air quality may be affected.",
+                    "alert": "User should take action. Check local advisories.",
+                    "critical": "IMMEDIATE: evacuation or emergency may be needed. Alert user now.",
+                }
+                b["response_taken"] = responses.get(severity, "logged")
             else:
                 b["verification_status"] = "investigated"
-                b["verification_result"] = "manual review, no search results"
+                b["verification_result"] = "no search results — manual review"
+                b["severity"] = "watch"
+                b["response_taken"] = "Logged. No search results available. Manual review recommended."
+
             save_beliefs(data)
             return b
     return None
+
+
+def needs_investigation():
+    """Return beliefs that should be investigated."""
+    data = load_beliefs()
+    result = []
+    for b in data["beliefs"]:
+        if b.get("investigated"):
+            continue
+        if b.get("safety_flag"):
+            result.append((b, "SAFETY"))
+        elif b.get("contradicts") and b.get("contradiction_type") != "contextual":
+            result.append((b, "CONTRADICTION"))
+        elif b.get("confidence", 1.0) < 0.5:
+            result.append((b, "LOW_CONFIDENCE"))
+    return result
+
+
+def safety_alerts():
+    """Return beliefs flagged as safety-relevant that haven't been investigated."""
+    data = load_beliefs()
+    return [b for b in data["beliefs"]
+            if b.get("safety_flag") and not b.get("investigated")]
 
 
 def needs_investigation():
@@ -301,8 +395,9 @@ def summary():
         ctx = " (context: %s)" % b["context"] if b.get("context") else ""
         ctype = " [contextual]" if b.get("contradiction_type") == "contextual" else ""
         safety = " ⚠️" if b.get("safety_flag") else ""
+        sev = " [%s]" % b.get("severity") if b.get("severity") and b.get("severity") != "info" else ""
         vstatus = " [%s]" % b.get("verification_status", "unverified") if b.get("verification_status") != "unverified" else ""
-        print("  [%d] (active, conf=%.2f)%s%s%s%s %s" % (b["id"], b["confidence"], ctype, ctx, safety, vstatus, b["claim"]))
+        print("  [%d] (active, conf=%.2f)%s%s%s%s%s %s" % (b["id"], b["confidence"], ctype, ctx, safety, sev, vstatus, b["claim"]))
         if b.get("supersedes"):
             print("       supersedes #%d" % b["supersedes"])
     if superseded:
@@ -342,6 +437,10 @@ def main():
     sub.add_parser("summary", help="Summary")
 
     inv = sub.add_parser("investigate", help="List beliefs needing investigation")
+    invs = sub.add_parser("investigate-safety", help="Investigate a safety-relevant belief")
+    invs.add_argument("belief_id", type=int, help="Belief ID")
+    invs.add_argument("--location", default=None, help="User location (e.g., 'Los Angeles, CA')")
+    invs.add_argument("--results", default=None, help="Comma-separated search results")
     ver = sub.add_parser("verify", help="Verify a belief with search results")
     ver.add_argument("belief_id", type=int, help="Belief ID")
     ver.add_argument("--results", default=None, help="Comma-separated search results")
@@ -433,8 +532,35 @@ def main():
         print("SAFETY ALERTS (%d):" % len(alerts))
         for b in alerts:
             print("  [%d] %s" % (b["id"], b["claim"]))
+            print("       Severity: %s" % b.get("severity", "unknown"))
             print("       Source: %s" % b.get("source"))
             print("       Evidence: %s" % (b.get("evidence") or "none")[:100])
+            print("       Location: %s" % (b.get("location_context") or "not set"))
+            if b.get("investigation"):
+                print("       Investigation: %s" % b["investigation"].get("source_found", "none"))
+            if b.get("response_taken"):
+                print("       Response: %s" % b["response_taken"])
+        return 0
+
+    if args.cmd == "investigate-safety":
+        bid = args.belief_id
+        loc = args.location
+        results = args.results.split(",") if args.results else None
+        b = investigate_safety(bid, search_results=results, location_context=loc)
+        if b:
+            print("Belief #%d: severity=%s" % (b["id"], b.get("severity")))
+            print("  Investigation: %s" % b.get("verification_result"))
+            print("  Response: %s" % b.get("response_taken"))
+            if b.get("investigation"):
+                inv = b["investigation"]
+                if inv.get("source_found"):
+                    print("  Source: %s" % inv["source_found"][:100])
+                if inv.get("evacuation"):
+                    print("  EVACUATION: %s" % inv["evacuation"][:100])
+                if inv.get("air_quality"):
+                    print("  Air quality: %s" % inv["air_quality"][:100])
+        else:
+            print("Belief %d not found" % bid)
         return 0
 
     if args.cmd == "summary":

@@ -1870,27 +1870,37 @@ def check_watch_targets():
 def check_belief_safety():
     """Check for safety-relevant beliefs and unverified contradictions.
     Investigates using web search. Alerts if something dangerous is found.
+    Uses severity scale: info/watch/warning/alert/critical.
+    Location context from daemon_config (user_location field).
     Never raises."""
     try:
         import belief_tracker as bt
+        cfg = load_config()
+        location = cfg.get("user_location", None)
+
         # Safety alerts first (highest priority)
         alerts = bt.safety_alerts()
         if alerts:
             for b in alerts:
-                log("SAFETY ALERT: belief #%d: %s" % (b["id"], b["claim"][:80]))
+                log("SAFETY ALERT [severity=%s]: belief #%d: %s" % (
+                    b.get("severity", "watch"), b["id"], b["claim"][:80]))
                 log("  Source: %s" % b.get("source"))
                 log("  Evidence: %s" % (b.get("evidence") or "none")[:100])
-                # Attempt web search to verify
+                # Attempt web search to verify and determine severity
                 try:
                     results = search_web(b["claim"][:60])
-                    if results:
-                        bt.verify_belief(b["id"], search_results=results)
-                        log("  Investigated: %s" % bt.get_belief(b["id"]).get("verification_status"))
-                    else:
-                        bt.verify_belief(b["id"], search_results=None)
+                    bt.investigate_safety(b["id"], search_results=results, location_context=location)
+                    updated = bt.get_belief(b["id"])
+                    log("  Severity: %s | Response: %s" % (
+                        updated.get("severity"), updated.get("response_taken")))
+                    if updated.get("severity") in ("alert", "critical"):
+                        log("  *** USER ALERT: %s ***" % updated.get("response_taken"))
+                        write_memory_entry("beam-mk2", "warning",
+                            "SAFETY %s: %s — %s" % (updated.get("severity").upper(),
+                            b["claim"][:60], updated.get("response_taken")))
                 except Exception as e:
                     log("  Investigation failed: %s" % e)
-                    bt.verify_belief(b["id"], search_results=None)
+                    bt.investigate_safety(b["id"], search_results=None, location_context=location)
 
         # Unverified contradictions (non-safety)
         items = bt.needs_investigation()
