@@ -68,7 +68,7 @@ def read_log(limit=None, path=None):
         return entries[-limit:]
     return entries
 
-def write_entry(agent_id, entry_type, content, metadata=None, path=None, session_id=None):
+def write_entry(agent_id, entry_type, content, metadata=None, path=None, session_id=None, method=None, story=None):
     path = path or MEMORY_LOG
     data = load_log(path)
     # Auto-detect session_id from environment or generate one
@@ -86,6 +86,8 @@ def write_entry(agent_id, entry_type, content, metadata=None, path=None, session
         "metadata": metadata or {},
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "timestamp_unix": time.time(),
+        "method": method,
+        "story": story,
     }
     data["entries"].append(entry)
     data["next_id"] += 1

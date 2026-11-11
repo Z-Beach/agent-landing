@@ -364,7 +364,8 @@ def read_memory_log(limit=20):
         entries = entries[-limit:]
     return entries
 
-def write_memory_entry(agent_id, entry_type, content, metadata=None, session_id=None):
+def write_memory_entry(agent_id, entry_type, content, metadata=None, session_id=None,
+                      method=None, story=None):
     ok, reason = validate_memory_write(content)
     if not ok:
         log("Memory write blocked: %s" % reason)
@@ -391,6 +392,8 @@ def write_memory_entry(agent_id, entry_type, content, metadata=None, session_id=
         "timestamp_unix": time.time(),
         "contradicted": False,
         "contradiction_reason": None,
+        "method": method,
+        "story": story,
     }
     data["entries"].append(entry)
     data["next_id"] += 1

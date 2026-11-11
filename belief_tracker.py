@@ -53,7 +53,7 @@ def save_beliefs(data):
 
 
 def record_belief(claim, evidence=None, source=None, confidence=0.5, contradicts=None,
-                 context=None, contradiction_type="absolute"):
+                 context=None, contradiction_type="absolute", method=None, story=None):
     """Record a new belief. Never overwrites an existing one.
 
     context: when/where this belief applies (e.g., "noon, clear weather").
@@ -103,6 +103,8 @@ def record_belief(claim, evidence=None, source=None, confidence=0.5, contradicts
         "investigation": None,     # what was found during investigation
         "investigated": False,
         "response_taken": None,   # what the agent did about it
+        "method": method,
+        "story": story,
     }
 
     # If this belief contradicts existing ones, link them
@@ -123,7 +125,7 @@ def record_belief(claim, evidence=None, source=None, confidence=0.5, contradicts
 
 
 def update_belief(old_id, new_claim, reason="", evidence=None, source=None, confidence=0.5,
-                 context=None, contradiction_type="absolute"):
+                 context=None, contradiction_type="absolute", method=None, story=None):
     """Update a belief: mark old as superseded, record new as active, link them.
 
     The old belief stays in the record. Its status becomes "superseded"
@@ -164,6 +166,8 @@ def update_belief(old_id, new_claim, reason="", evidence=None, source=None, conf
         "contradiction_type": contradiction_type,
         "contradicted_by": [],
         "update_reason": reason,
+        "method": method,
+        "story": story,
     }
     if contradiction_type == "contextual":
         # Both can be true under different conditions — don't supersede
