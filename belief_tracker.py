@@ -64,6 +64,12 @@ def record_belief(claim, evidence=None, source=None, confidence=0.5, contradicts
     belief_id = data["next_id"]
     data["next_id"] += 1
 
+    # Safety check: does this claim contain safety-relevant keywords?
+    safety_keywords = ["fire", "smoke", "explosion", "toxic", "chemical", "spill",
+                       "danger", "emergency", "evacuate", "poison", "gas leak",
+                       "radiation", "contamination", "hazard", "unsafe"]
+    safety_flag = any(kw in claim.lower() for kw in safety_keywords)
+
     belief = {
         "id": belief_id,
         "claim": claim,
@@ -72,12 +78,17 @@ def record_belief(claim, evidence=None, source=None, confidence=0.5, contradicts
         "confidence": max(0.0, min(1.0, confidence)),
         "status": "active",
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "context": context,  # when/where this belief applies
+        "context": context,
         "supersedes": None,
         "superseded_by": None,
         "contradicts": contradicts,
         "contradiction_type": contradiction_type if contradicts else None,
         "contradicted_by": [],
+        "verification_status": "unverified",
+        "verified_at": None,
+        "verification_result": None,
+        "safety_flag": safety_flag,
+        "investigated": False,
     }
 
     # If this belief contradicts existing ones, link them
@@ -170,6 +181,64 @@ def get_belief(belief_id):
     return None
 
 
+def verify_belief(belief_id, search_results=None):
+    """Mark a belief as verified or disputed based on investigation.
+
+    search_results: list of strings from web search or other verification.
+    If search_results contains supporting evidence, status becomes "verified".
+    If search_results contains contradicting evidence, status becomes "disputed".
+    If no search_results, status becomes "investigated" (manual review).
+    """
+    data = load_beliefs()
+    for b in data["beliefs"]:
+        if b["id"] == belief_id:
+            b["investigated"] = True
+            b["verified_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            if search_results:
+                # Check if any result supports or contradicts
+                claim_lower = b["claim"].lower()
+                supporting = any(claim_lower.split()[0] in r.lower() for r in search_results if r)
+                if supporting:
+                    b["verification_status"] = "verified"
+                    b["verification_result"] = "supported by search results"
+                else:
+                    b["verification_status"] = "disputed"
+                    b["verification_result"] = "not supported by search results"
+            else:
+                b["verification_status"] = "investigated"
+                b["verification_result"] = "manual review, no search results"
+            save_beliefs(data)
+            return b
+    return None
+
+
+def needs_investigation():
+    """Return beliefs that should be investigated:
+    - Unverified beliefs that contradict an active belief
+    - Beliefs with safety flags
+    - Beliefs with confidence < 0.5
+    """
+    data = load_beliefs()
+    result = []
+    for b in data["beliefs"]:
+        if b.get("investigated"):
+            continue
+        if b.get("safety_flag"):
+            result.append((b, "SAFETY"))
+        elif b.get("contradicts") and b.get("contradiction_type") != "contextual":
+            result.append((b, "CONTRADICTION"))
+        elif b.get("confidence", 1.0) < 0.5:
+            result.append((b, "LOW_CONFIDENCE"))
+    return result
+
+
+def safety_alerts():
+    """Return beliefs flagged as safety-relevant that haven't been investigated."""
+    data = load_beliefs()
+    return [b for b in data["beliefs"]
+            if b.get("safety_flag") and not b.get("investigated")]
+
+
 def get_belief_history(belief_id):
     """Trace the full history of a belief through supersessions."""
     data = load_beliefs()
@@ -231,7 +300,9 @@ def summary():
     for b in active:
         ctx = " (context: %s)" % b["context"] if b.get("context") else ""
         ctype = " [contextual]" if b.get("contradiction_type") == "contextual" else ""
-        print("  [%d] (active, conf=%.2f)%s%s %s" % (b["id"], b["confidence"], ctype, ctx, b["claim"]))
+        safety = " ⚠️" if b.get("safety_flag") else ""
+        vstatus = " [%s]" % b.get("verification_status", "unverified") if b.get("verification_status") != "unverified" else ""
+        print("  [%d] (active, conf=%.2f)%s%s%s%s %s" % (b["id"], b["confidence"], ctype, ctx, safety, vstatus, b["claim"]))
         if b.get("supersedes"):
             print("       supersedes #%d" % b["supersedes"])
     if superseded:
@@ -269,6 +340,12 @@ def main():
     sub.add_parser("active", help="List active beliefs")
     sub.add_parser("contradictions", help="Show contradictory belief pairs")
     sub.add_parser("summary", help="Summary")
+
+    inv = sub.add_parser("investigate", help="List beliefs needing investigation")
+    ver = sub.add_parser("verify", help="Verify a belief with search results")
+    ver.add_argument("belief_id", type=int, help="Belief ID")
+    ver.add_argument("--results", default=None, help="Comma-separated search results")
+    sub.add_parser("safety", help="Show safety alerts")
 
     hist = sub.add_parser("history", help="Trace belief history")
     hist.add_argument("belief_id", type=int, help="Belief ID")
@@ -323,6 +400,41 @@ def main():
             print("  [%d] (%s) %s" % (b["id"], b["status"], b["claim"]))
             if b.get("update_reason"):
                 print("       reason: %s" % b["update_reason"])
+        return 0
+
+    if args.cmd == "investigate":
+        items = needs_investigation()
+        if not items:
+            print("No beliefs need investigation.")
+            return 0
+        print("Beliefs needing investigation:")
+        for b, reason in items:
+            print("  [%d] (%s) %s" % (b["id"], reason, b["claim"][:70]))
+            if b.get("safety_flag"):
+                print("       ⚠️  SAFETY FLAG — investigate immediately")
+        return 0
+
+    if args.cmd == "verify":
+        bid = args.belief_id
+        results = args.results.split(",") if args.results else None
+        b = verify_belief(bid, search_results=results)
+        if b:
+            print("Belief #%d: %s" % (b["id"], b["verification_status"]))
+            print("  Result: %s" % b["verification_result"])
+        else:
+            print("Belief %d not found" % bid)
+        return 0
+
+    if args.cmd == "safety":
+        alerts = safety_alerts()
+        if not alerts:
+            print("No safety alerts.")
+            return 0
+        print("SAFETY ALERTS (%d):" % len(alerts))
+        for b in alerts:
+            print("  [%d] %s" % (b["id"], b["claim"]))
+            print("       Source: %s" % b.get("source"))
+            print("       Evidence: %s" % (b.get("evidence") or "none")[:100])
         return 0
 
     if args.cmd == "summary":

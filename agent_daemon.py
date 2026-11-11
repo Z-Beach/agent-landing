@@ -1150,6 +1150,7 @@ def run_cycle(cfg):
     """Run one daemon cycle."""
     agent_id = cfg["agent_id"]
     log(f"=== Cycle start: {agent_id} ===")
+    check_belief_safety()  # investigate safety-relevant beliefs
     check_seal()  # verify memory hasn't changed since last seal
     wifi_status = check_wifi_connectivity()
     if wifi_status:
@@ -1862,6 +1863,44 @@ def check_watch_targets():
 # ── Memory seal (hash chain over memory files) ─────────────────────────────────
 # Per-file sha256 chain. Tells us if a memory file changed under us, and which
 # one. The head is published to the blog as an external anchor (xiaoye pattern).
+
+# ── Belief safety: investigate contradictions and safety-relevant claims ────
+
+
+def check_belief_safety():
+    """Check for safety-relevant beliefs and unverified contradictions.
+    Investigates using web search. Alerts if something dangerous is found.
+    Never raises."""
+    try:
+        import belief_tracker as bt
+        # Safety alerts first (highest priority)
+        alerts = bt.safety_alerts()
+        if alerts:
+            for b in alerts:
+                log("SAFETY ALERT: belief #%d: %s" % (b["id"], b["claim"][:80]))
+                log("  Source: %s" % b.get("source"))
+                log("  Evidence: %s" % (b.get("evidence") or "none")[:100])
+                # Attempt web search to verify
+                try:
+                    results = search_web(b["claim"][:60])
+                    if results:
+                        bt.verify_belief(b["id"], search_results=results)
+                        log("  Investigated: %s" % bt.get_belief(b["id"]).get("verification_status"))
+                    else:
+                        bt.verify_belief(b["id"], search_results=None)
+                except Exception as e:
+                    log("  Investigation failed: %s" % e)
+                    bt.verify_belief(b["id"], search_results=None)
+
+        # Unverified contradictions (non-safety)
+        items = bt.needs_investigation()
+        non_safety = [(b, r) for b, r in items if r != "SAFETY"]
+        if non_safety:
+            for b, reason in non_safety[:3]:
+                log("Belief #%d needs investigation (%s): %s" % (b["id"], reason, b["claim"][:60]))
+    except Exception as e:
+        log("Belief safety check error: %s" % e)
+
 
 def check_seal():
     """Verify memory files against last seal. Alert if tampered."""
