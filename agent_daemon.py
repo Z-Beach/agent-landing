@@ -18,6 +18,7 @@ Usage:
     python3 agent_daemon.py --status           # show daemon status
 """
 import json
+import hashlib
 import os
 import time
 import sys
@@ -388,6 +389,8 @@ def write_memory_entry(agent_id, entry_type, content, metadata=None, session_id=
         "metadata": metadata or {},
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "timestamp_unix": time.time(),
+        "contradicted": False,
+        "contradiction_reason": None,
     }
     data["entries"].append(entry)
     data["next_id"] += 1
@@ -453,6 +456,31 @@ def _check_memory_write_rate(cycle_num):
     return True
 
 
+def mark_memory_contradicted(entry_id, reason):
+    """Mark a memory entry as contradicted. Does not delete it — the record
+    stays, but it's flagged so future reads know it was wrong."""
+    data = load_memory_log()
+    for entry in data["entries"]:
+        if entry.get("id") == entry_id:
+            entry["contradicted"] = True
+            entry["contradiction_reason"] = reason
+            entry["contradicted_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            save_memory_log(data)
+            log("Memory entry %s marked as contradicted: %s" % (entry_id, reason))
+            return True
+    return False
+
+
+def get_hallucination_rate():
+    """Calculate the rate of contradicted memory entries."""
+    data = load_memory_log()
+    entries = data["entries"]
+    if not entries:
+        return 0.0, 0, 0
+    contradicted = sum(1 for e in entries if e.get("contradicted"))
+    return contradicted / len(entries), contradicted, len(entries)
+
+
 def fetch_forum_posts(limit=10):
     try:
         url = "http://localhost:80/api/forum"
@@ -487,6 +515,23 @@ def fetch_checkins(limit=10):
         return []
 
 FORUM_POSTED_TITLES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "forum_posted_titles.txt")
+FORUM_IDEMPOTENCY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "forum_idempotency_keys.txt")
+
+
+def _load_idempotency_keys():
+    try:
+        with open(FORUM_IDEMPOTENCY_FILE, encoding="utf-8") as f:
+            return set(line.strip() for line in f if line.strip())
+    except OSError:
+        return set()
+
+
+def _save_idempotency_key(key):
+    try:
+        with open(FORUM_IDEMPOTENCY_FILE, "a", encoding="utf-8") as f:
+            f.write(key + "\n")
+    except Exception:
+        pass
 
 
 def _load_posted_forum_titles():
@@ -506,9 +551,16 @@ def _save_posted_forum_title(title):
 
 
 def post_forum(agent_id, title, content, category="general", post_type="observation"):
+    # Idempotency: hash of title+content. If this exact post was already
+    # attempted, skip. Prevents duplicate actions even if the LLM re-decides.
+    idem_key = hashlib.md5((title.strip().lower() + "||" + content.strip()[:200]).encode()).hexdigest()
+    if idem_key in _load_idempotency_keys():
+        log("Forum post skipped (idempotent duplicate): %s" % title)
+        return None
     # Deduplication 1: local title tracking (O(1), survives restarts)
     if title.strip().lower() in _load_posted_forum_titles():
         log("Forum post skipped (already posted): %s" % title)
+        _save_idempotency_key(idem_key)
         return None
     # Deduplication 2: check forum API
     try:
@@ -534,6 +586,7 @@ def post_forum(agent_id, title, content, category="general", post_type="observat
         with urllib.request.urlopen(req, timeout=10) as resp:
             result = json.loads(resp.read())
             _save_posted_forum_title(title)
+            _save_idempotency_key(idem_key)
             return result
     except Exception as e:
         log(f"Failed to post to forum: {e}")
