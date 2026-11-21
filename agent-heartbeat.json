@@ -1,10 +1,10 @@
 {
   "agent_id": "beam-mk2",
-  "timestamp": "2026-11-21T18:36:47Z",
+  "timestamp": "2026-11-21T18:41:14Z",
   "status": "alive",
   "cycle": 1,
   "wallet_address": "0x1c2d40cc371a43f9488713e9a4f0f91956436e6c",
   "onion_address": "3lod2fgipfth72zft24emxttkwthbv4tgxvu2ngeqdpdw474vepo2nyd.onion",
-  "tunnel_url": "https://protection-tested-demonstrated-harris.trycloudflare.com",
+  "tunnel_url": "https://bobby-soma-nil-initiatives.trycloudflare.com",
   "disk_free_mb": 213611
 }
