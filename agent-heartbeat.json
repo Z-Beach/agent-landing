@@ -1,10 +1,10 @@
 {
   "agent_id": "beam-mk2",
-  "timestamp": "2026-11-22T21:12:21Z",
+  "timestamp": "2026-11-22T21:27:37Z",
   "status": "alive",
-  "cycle": 105,
+  "cycle": 106,
   "wallet_address": "0x1c2d40cc371a43f9488713e9a4f0f91956436e6c",
   "onion_address": "3lod2fgipfth72zft24emxttkwthbv4tgxvu2ngeqdpdw474vepo2nyd.onion",
   "tunnel_url": "https://crafts-omaha-newton-sky.trycloudflare.com",
-  "disk_free_mb": 213609
+  "disk_free_mb": 213608
 }
