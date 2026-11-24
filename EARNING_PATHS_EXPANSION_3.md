@@ -172,3 +172,50 @@ These are service concepts rather than platform endorsements. The agent can pros
 For every platform, record the official URL, last checked date, original terms URL, whether autonomous agents are expressly allowed, whether a human account holder is required, reward type, funding evidence, payout rails, fees, minimum withdrawal, geography, task freshness and a test task. Keep separate labels for cash, stablecoins, volatile tokens, cloud credits, points and reputation. Do not count credits or unwithdrawable tokens as revenue.
 
 For every service idea, find at least three examples of real buyers or public requests before building a product. Prefer customer interviews or a small paid pilot over building an unrequested tool. Keep a record of time spent prospecting, conversion rate, accepted deliverables and settled net revenue.
+
+
+---
+
+## Live-feed discovery update — 2026-11-24
+
+The following sources were checked during this update. Counts fluctuate; treat them as snapshots, not promises of available work.
+
+### Aggregators worth polling automatically
+
+- [Agentics Markets](https://agentics.page/markets) — directory of 61 marketplaces with live job feeds/API/MCP. Its live board showed 261 open jobs and 16 feeds online when checked. Poll the feed, deduplicate by source task ID, then verify the original listing before applying.
+- [GOAT Market](https://goatmarket.com/) — public JSON offers feed at https://goatmarket.com/offers.json, aggregating listings across platforms. Its page showed 4,806 listings in its last stated scan (24 Oct 2026); this includes conventional freelance platforms and is not a count of agent-eligible work.
+- [Jobbi Gigs](https://jobbi.org/gigs) and [market report](https://jobbi.org/gigs/report/) — live index and reward breakdown. The 24 Nov report showed roughly 666–678 open gigs depending on refresh, with a $20 median among dollar-denominated listings. This is not an earnings forecast; tasks may be tiny, competitive, token-denominated or human-lane.
+- [Shaduf Paid Opportunities](https://shaduf.ai/p/agentic-freelance/opportunities/) — second-opinion directory that grades payment evidence and separates confirmed payouts from marketing claims. Its October snapshot flagged many venues as probe-first, insufficient evidence or avoid.
+
+### Additional places to monitor
+
+- [make.fun](https://make.fun/) — agent-entered bounty board; a current guide describes agent keypair participation and USDC payouts on Solana for listed paid places. Verify each bounty's terms and eligibility.
+- [Superteam Earn](https://earn.superteam.fun/) — Solana ecosystem bounties, grants and projects; check whether agents may enter and whether rewards are funded.
+- [Immunefi](https://immunefi.com/) — smart-contract and protocol security bounty programs. High upside, but only within explicit scope, safe-harbor terms and demonstrated competence.
+- [Cantina](https://cantina.xyz/) — security contests and audits; serious technical requirements and strict contest rules.
+- [Sherlock](https://sherlock.xyz/) — smart-contract audit contests; check current contest rules and payment terms.
+- [TaskMarket](https://taskmarket.dev/) — agent bounty marketplace listed by current aggregators; verify current tasks and payout details at source.
+- [Execution Market](https://execution.market/) — reverse route: the daemon can hire a human for real-world photos, checks, pickup or on-site verification. Treat as a cost unless a customer funds the work first.
+- [x402 Bazaar](https://x402.org/) — pay-per-call service directory, not primarily a job board. Potential route for selling a useful paid API.
+- [Nevermined](https://nevermined.app/) — agent-service catalog and payment infrastructure; investigate as distribution/payment rails for a service the daemon builds.
+- [Skyfire](https://skyfire.xyz/) — agent payment identity and service ecosystem; inspect current onboarding and geography.
+- [Circle Agent Services](https://agents.circle.com/) — service directory; possible customer discovery for paid agent services.
+- [Smithery](https://smithery.ai/) — MCP server directory. Distribution is not itself income, but a useful tool may lead to sponsorship, consulting, hosted subscriptions or support.
+- [A2A Registry](https://a2aregistry.org/) and [8004scan](https://8004scan.io/) — agent discovery/identity registries, not job boards. Use to find potential customers, collaborators and service markets.
+
+### What the daemon must distinguish
+
+An aggregator's "open jobs" count can mix agent-eligible tasks, human-only freelance work, account-gated jobs, token/points rewards, stale or duplicated listings, unfunded offers and service directories. Never treat a raw count or advertised reward total as income.
+
+For every candidate, open the original task, verify buyer and acceptance criteria, check autonomous-agent eligibility, funding/escrow and payout route, estimate competition and net value, then claim only within delegated authority.
+
+### Suggested polling order
+
+1. Agentics and GOAT for broad discovery.
+2. Jobbi for agent-lane opportunities and reward comparisons.
+3. Algora/GitHub bounty labels and OnlyDust for software issues.
+4. Superteam Earn and make.fun for crypto-native bounties.
+5. BasedAgents, OpenTask, Frantic, Clawlancer and other agent-native boards for direct claims.
+6. AIcrowd, DrivenData, Immunefi, Cantina and Sherlock only when the daemon has a matching demonstrated skill.
+7. Human-lane platforms only through a human-assisted workflow where the user is the actual account holder and responsible contractor.
+
