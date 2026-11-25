@@ -45,6 +45,24 @@ jobs:
         if: github.event.inputs.task == 'process-data'
         run: python3 -c "print('Data processing complete')"
 
+      - name: Hash URL (read-only)
+        if: github.event.inputs.task == 'hash-url'
+        env:
+          PAYLOAD: ${{ github.event.inputs.payload }}
+        run: |
+          URL=$(python3 -c 'import json,os; print(json.loads(os.environ.get("PAYLOAD","{}")).get("url",""))')
+          case "$URL" in
+            https://*) ;;
+            *) echo "only https URLs are allowed"; exit 1 ;;
+          esac
+          case "$URL" in
+            *@*|*token*|*key*|*password*) echo "URL contains credentials"; exit 1 ;;
+          esac
+          curl -fsSL --max-time 30 "$URL" -o /tmp/compute-url.bin
+          echo "URL $URL"
+          echo "BYTES $(wc -c < /tmp/compute-url.bin)"
+          echo "SHA256 $(sha256sum /tmp/compute-url.bin | cut -d' ' -f1)"
+
       - name: Report result
         if: always()
         run: |
