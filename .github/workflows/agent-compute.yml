@@ -63,6 +63,11 @@ jobs:
           echo "BYTES $(wc -c < /tmp/compute-url.bin)"
           echo "SHA256 $(sha256sum /tmp/compute-url.bin | cut -d' ' -f1)"
 
+      - name: Text stats (read-only)
+        if: github.event.inputs.task == 'text-stats'
+        env:
+          PAYLOAD: ${{ github.event.inputs.payload }}
+        run: python3 -c "import json,os,hashlib; p=json.loads(os.environ.get('PAYLOAD','{}')); t=p.get('text','')[:20000]; print('CHARS',len(t)); print('WORDS',len(t.split())); print('LINES',len(t.splitlines())); print('SHA256',hashlib.sha256(t.encode()).hexdigest())"
       - name: Report result
         if: always()
         run: |
